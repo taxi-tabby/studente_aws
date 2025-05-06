@@ -365,31 +365,29 @@ def start_monitoring():
     send_result = send_to_tcp_clients(connection_msg)
     logger.info(f"TCP 클라이언트 연결 확인: {'성공' if send_result else '실패 또는 클라이언트 없음'}")
     
-    # WebSocket 클라이언트에게 비동기 방식으로 메시지 전송 시도
+    # WebSocket 클라이언트에게 메시지 전송 - 임시 이벤트 루프 대신 TCP 서버의 forward_activity_message 사용
     try:
-        import asyncio
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        new_loop.run_until_complete(broadcast_to_ws_clients(connection_msg))
-        new_loop.close()
+        from core.tcp_server import forward_activity_message
+        forward_activity_message(connection_msg)
         logger.info("WebSocket 클라이언트에게 초기화 메시지 전송 완료")
     except Exception as e:
         logger.error(f"WebSocket 메시지 전송 중 오류: {e}")
     
     # 키보드 및 마우스 활동 모니터링 시작
     keyboard_thread = threading.Thread(target=monitor_keyboard, daemon=True, name="KeyboardMonitor")
-    mouse_thread = threading.Thread(target=monitor_mouse, daemon=True, name="MouseMonitor")
-    screen_thread = threading.Thread(target=monitor_screen_changes, daemon=True, name="ScreenMonitor")
-    audio_thread = threading.Thread(target=monitor_audio, daemon=True, name="AudioMonitor")
+    # mouse_thread = threading.Thread(target=monitor_mouse, daemon=True, name="MouseMonitor")
+    # screen_thread = threading.Thread(target=monitor_screen_changes, daemon=True, name="ScreenMonitor")
+    # audio_thread = threading.Thread(target=monitor_audio, daemon=True, name="AudioMonitor")
     
     # 스레드 시작
     keyboard_thread.start()
-    mouse_thread.start()
-    screen_thread.start()
-    audio_thread.start()
+    # mouse_thread.start()
+    # screen_thread.start()
+    # audio_thread.start()
     
     # 스레드 추적을 위해 목록에 저장
-    _monitoring_threads = [keyboard_thread, mouse_thread, screen_thread, audio_thread]
+    _monitoring_threads = [keyboard_thread]
+    # _monitoring_threads = [keyboard_thread, mouse_thread, screen_thread, audio_thread]
     
     # 활동 모니터링 시작 메시지 전송
     start_msg = {
@@ -399,12 +397,9 @@ def start_monitoring():
     }
     send_to_tcp_clients(start_msg)
     
-    # 다시 한번 WebSocket 클라이언트에게 시작 메시지 전송 시도
+    # WebSocket 클라이언트에게 시작 메시지 전송 - 임시 이벤트 루프 대신 TCP 서버의 forward_activity_message 사용
     try:
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        new_loop.run_until_complete(broadcast_to_ws_clients(start_msg))
-        new_loop.close()
+        forward_activity_message(start_msg)
     except Exception as e:
         logger.error(f"WebSocket 시작 메시지 전송 중 오류: {e}")
     

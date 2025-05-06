@@ -7,6 +7,9 @@ import uuid
 import logging
 import asyncio
 import websockets
+import threading
+import queue
+from collections import defaultdict
 
 # 로거 설정
 logger = logging.getLogger(__name__)
@@ -23,6 +26,24 @@ WS_URL = f"ws://{WS_HOST}:{WS_PORT}"
 
 # WebSocket 클라이언트 연결 캐싱
 _ws_connection = None
+
+# 메시지 큐 및 스로틀링을 위한 설정
+_message_queue = queue.Queue()
+_queue_processing = False
+_activity_counters = defaultdict(int)  # 각 활동 유형별 카운터
+_last_send_time = {}  # 각 활동 유형별 마지막 전송 시간
+_queue_lock = threading.Lock()  # 큐 처리를 위한 락
+
+# 스로틀링 설정 (밀리초)
+THROTTLE_INTERVAL_MS = {
+    "KEYBOARD_ACTIVITY": 300,  # 키보드 활동은 300ms 간격으로 제한
+    "MOUSE_MOVEMENT": 500,     # 마우스 이동은 500ms 간격으로 제한
+    "MOUSE_CLICK": 200,        # 마우스 클릭은 200ms 간격으로 제한
+    "SCREEN_CHANGE": 1000,     # 화면 변화는 1초 간격으로 제한
+    "ACTIVE_WINDOW": 500,      # 활성 창 변경은 500ms 간격으로 제한
+    "AUDIO_PLAYBACK": 1000,    # 오디오 재생은 1초 간격으로 제한
+    "DEFAULT": 200             # 기본값은 200ms
+}
 
 # 메시지 타입 정의
 class MessageType:
@@ -174,17 +195,152 @@ def send_message(message):
         logger.error(f"동기적 WebSocket 메시지 전송 중 오류 발생: {e}")
         return False
 
+def process_message_queue():
+    """메시지 큐를 처리하는 스레드 함수"""
+    global _queue_processing
+    
+    if _queue_processing:
+        return  # 이미 실행 중인 경우 중복 실행 방지
+    
+    with _queue_lock:
+        _queue_processing = True
+    
+    try:
+        logger.debug("메시지 큐 처리 스레드 시작")
+        
+        while True:
+            try:
+                # 큐가 비어있지 않으면 메시지 처리
+                if not _message_queue.empty():
+                    # 큐에서 메시지와 활동 유형 가져오기
+                    message, activity_type, direct_send = _message_queue.get(block=False)
+                    
+                    # 직접 전송 메시지는 스로틀링 없이 바로 전송
+                    if direct_send:
+                        if isinstance(message, dict):
+                            logger.debug(f"우선순위 메시지 직접 전송 - 타입: {message.get('type', 'UNKNOWN')}")
+                        else:
+                            logger.debug("우선순위 문자열 메시지 직접 전송")
+                        
+                        # TCP 및 WebSocket으로 전송
+                        try:
+                            from core.tcp_server import forward_activity_message
+                            forward_activity_message(message)
+                        except Exception as e:
+                            logger.error(f"직접 메시지 전송 중 오류: {e}")
+                            # 실패해도 계속 진행
+                        
+                        _message_queue.task_done()
+                        continue
+                    
+                    # 카운터 증가 및 마지막 전송 시간 확인
+                    _activity_counters[activity_type] += 1
+                    current_time = int(time.time() * 1000)  # 현재 시간 (밀리초)
+                    
+                    # 스로틀 간격 설정 (기본값 사용 또는 활동 유형별 간격 적용)
+                    throttle_interval = THROTTLE_INTERVAL_MS.get(activity_type, THROTTLE_INTERVAL_MS["DEFAULT"])
+                    
+                    # 마지막 전송 이후 충분한 시간이 지났는지 확인
+                    if activity_type not in _last_send_time or (current_time - _last_send_time[activity_type]) >= throttle_interval:
+                        count = _activity_counters[activity_type]
+                        
+                        # 카운터가 있는 메시지의 경우, 카운트 정보 추가
+                        if count > 1 and isinstance(message, dict) and "content" in message:
+                            if isinstance(message["content"], dict):
+                                message["content"]["count"] = count
+                            else:
+                                # content가 딕셔너리가 아니면 딕셔너리로 변환
+                                message["content"] = {"value": message["content"], "count": count}
+                        
+                        # 전송 시도
+                        try:
+                            from core.tcp_server import forward_activity_message
+                            forward_activity_message(message)
+                            
+                            # 전송 시간 및 카운터 업데이트
+                            _last_send_time[activity_type] = current_time
+                            _activity_counters[activity_type] = 0
+                            
+                            logger.debug(f"활동 메시지 전송 완료 - 타입: {activity_type}, 카운트: {count}")
+                        except Exception as e:
+                            logger.error(f"큐 메시지 전송 중 오류: {e}")
+                    
+                    _message_queue.task_done()
+                else:
+                    # 큐가 비어있으면 잠시 대기
+                    time.sleep(0.05)
+            
+            except queue.Empty:
+                # 큐가 비어있는 경우 짧게 대기
+                time.sleep(0.05)
+            
+            except Exception as e:
+                logger.error(f"메시지 큐 처리 중 오류 발생: {e}")
+                time.sleep(0.1)  # 오류 발생 시 약간 더 긴 대기
+    
+    finally:
+        with _queue_lock:
+            _queue_processing = False
+        logger.debug("메시지 큐 처리 스레드 종료")
+
+def start_queue_processor():
+    """메시지 큐 처리 스레드를 시작합니다."""
+    global _queue_processing
+    
+    with _queue_lock:
+        if not _queue_processing:
+            # 큐 처리 스레드 시작
+            queue_thread = threading.Thread(target=process_message_queue, daemon=True, name="MessageQueueProcessor")
+            queue_thread.start()
+            logger.info("메시지 큐 처리 스레드가 시작되었습니다.")
+            return True
+    
+    return False
+
+def queue_message(message, activity_type=None, direct_send=False):
+    """
+    메시지를 큐에 추가합니다.
+    
+    Args:
+        message: 추가할 메시지 (딕셔너리 또는 문자열)
+        activity_type: 활동 유형, 메시지가 딕셔너리인 경우 자동 감지
+        direct_send: 스로틀링 없이 즉시 전송해야 하는지 여부
+        
+    Returns:
+        bool: 큐에 추가 성공 여부
+    """
+    try:
+        # 활동 유형 추출 또는 사용
+        if activity_type is None and isinstance(message, dict):
+            content = message.get("content", {})
+            if isinstance(content, dict) and "activity" in content:
+                activity_type = content["activity"]
+            else:
+                activity_type = message.get("type", "UNKNOWN")
+        
+        # 큐에 메시지 추가
+        _message_queue.put((message, activity_type, direct_send))
+        
+        # 큐 처리기 시작 (아직 실행 중이 아니면)
+        start_queue_processor()
+        
+        return True
+    
+    except Exception as e:
+        logger.error(f"메시지 큐 추가 중 오류 발생: {e}")
+        return False
+
 # 편의 함수: 특정 유형의 메시지를 빠르게 생성하고 전송
 def send_activity_message(activity_type, details=None):
     """
-    사용자 활동 관련 메시지를 생성하고 전송합니다.
+    사용자 활동 관련 메시지를 생성하고 큐에 추가합니다.
     
     Args:
         activity_type: 활동 유형 (MessageType 클래스의 상수 사용)
         details: 추가 세부 정보 (선택 사항)
         
     Returns:
-        bool: 메시지 전송 성공 여부
+        bool: 메시지 큐 추가 성공 여부
     """
     content = {"activity": activity_type}
     if details:
@@ -196,50 +352,39 @@ def send_activity_message(activity_type, details=None):
     logger.debug(f"활동 메시지 생성 중: {activity_type}")
     message = create_message(MessageType.USER_ACTIVITY, content)
     
-    # WebSocket을 통한 메시지 전송
-    ws_result = send_message(message)
-    
-    # TCP 서버를 통한 메시지 전송도 시도
-    tcp_result = False
-    try:
-        from core.tcp_server import send_to_tcp_clients, forward_activity_message
-        tcp_result = forward_activity_message(message)
-        if tcp_result:
-            logger.debug(f"TCP 서버를 통한 {activity_type} 메시지 전송 성공")
-        else:
-            logger.warning(f"TCP 서버를 통한 {activity_type} 메시지 전송 실패")
-    except Exception as e:
-        logger.error(f"TCP 서버 메시지 전송 중 오류: {e}")
-    
-    return ws_result or tcp_result  # 하나라도 성공하면 True 반환
+    # 메시지를 큐에 추가
+    return queue_message(message, activity_type)
 
 # 특정 활동 유형에 대한 편의 함수들
 def send_keyboard_activity():
     """키보드 활동 메시지를 전송합니다."""
-    logger.info("키보드 활동 메시지 전송")
+    logger.info("키보드 활동 메시지 큐에 추가")
     return send_activity_message(MessageType.KEYBOARD_ACTIVITY)
 
 def send_mouse_movement():
     """마우스 이동 메시지를 전송합니다."""
-    logger.info("마우스 이동 메시지 전송")
+    logger.info("마우스 이동 메시지 큐에 추가")
     return send_activity_message(MessageType.MOUSE_MOVEMENT)
 
 def send_mouse_click():
     """마우스 클릭 메시지를 전송합니다."""
-    logger.info("마우스 클릭 메시지 전송")
+    logger.info("마우스 클릭 메시지 큐에 추가")
     return send_activity_message(MessageType.MOUSE_CLICK)
 
 def send_screen_change():
     """화면 변화 메시지를 전송합니다."""
-    logger.info("화면 변화 메시지 전송")
+    logger.info("화면 변화 메시지 큐에 추가")
     return send_activity_message(MessageType.SCREEN_CHANGE)
 
 def send_active_window(window_name):
     """활성 창 변경 메시지를 전송합니다."""
-    logger.info(f"활성 창 변경 메시지 전송: {window_name}")
+    logger.info(f"활성 창 변경 메시지 큐에 추가: {window_name}")
     return send_activity_message(MessageType.ACTIVE_WINDOW, {"window_name": window_name})
 
 def send_audio_playback(volume):
     """오디오 재생 메시지를 전송합니다."""
-    logger.info(f"오디오 재생 메시지 전송 (볼륨: {volume})")
+    logger.info(f"오디오 재생 메시지 큐에 추가 (볼륨: {volume})")
     return send_activity_message(MessageType.AUDIO_PLAYBACK, {"volume": volume})
+
+# 큐 처리 스레드 자동 시작
+start_queue_processor()

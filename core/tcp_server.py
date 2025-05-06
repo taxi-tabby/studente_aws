@@ -885,7 +885,7 @@ async def start_websocket_server():
         # close_timeout을 늘려 비정상적인 종료에 대한 유예 시간 제공
         # max_queue를 늘려 많은 클라이언트가 대기할 수 있도록 함
         server = await websockets.serve(
-            handle_websocket, 
+            lambda websocket, path: handle_websocket(websocket), 
             SERVER_IP, 
             WS_PORT,
             max_size=10 * 1024 * 1024,  # 최대 메시지 크기 10MB
