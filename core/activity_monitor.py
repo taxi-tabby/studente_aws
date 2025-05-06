@@ -7,7 +7,6 @@ import os
 import tempfile
 import socket
 import numpy as np
-import pyautogui
 import cv2
 import pyaudio
 import ctypes
@@ -24,6 +23,15 @@ from core.service_manager import service_manager
 # 로거 설정
 logger = logging.getLogger(__name__)
 
+# PyAutoGUI 및 의존성 확인
+PYAUTOGUI_AVAILABLE = True
+try:
+    import pyautogui
+except ImportError as e:
+    logger.warning(f"PyAutoGUI 가져오기 오류: {e}")
+    logger.warning("화면 변화 모니터링이 비활성화됩니다. 필요한 경우 'pip install pillow pyautogui'를 실행하세요.")
+    PYAUTOGUI_AVAILABLE = False
+
 # 설정에서 값 로드
 def _get_setting(key, default_value):
     """설정에서 특정 키에 대한 값을 가져옵니다."""
@@ -38,6 +46,13 @@ PROCESS_NAME = "STUDY_AWS_MANAGER"  # 프로세스 이름 설정
 _last_keyboard_event = 0
 _last_mouse_movement = 0
 _last_mouse_click = 0
+_last_active_window_event = 0  # 활성 창 이벤트를 위한 변수 추가
+_last_active_window = ""  # 마지막으로 감지된 활성 창 저장용
+
+# 시스템 창 목록 - 이러한 창은 활성 창 메시지에서 무시됨
+SYSTEM_WINDOWS = ["Program Manager", "Windows Shell Experience Host", "Windows Explorer", 
+                 "Microsoft Text Input Application", "설정", "Settings", "Task Manager", 
+                 "작업 관리자", "시작", "Start", ""]
 
 # 오디오 형식 상수 정의
 AUDIO_FORMAT = pyaudio.paInt16
@@ -189,6 +204,12 @@ def monitor_screen_changes():
         logger.info("화면 변화 모니터링이 비활성화되어 있습니다.")
         return
     
+    # PyAutoGUI 사용 가능 여부 확인
+    if not PYAUTOGUI_AVAILABLE:
+        logger.error("PyAutoGUI가 사용 불가능하여 화면 모니터링을 시작할 수 없습니다.")
+        logger.error("'pip install pillow pyautogui'를 실행하여 필요한 패키지를 설치해주세요.")
+        return
+        
     # 설정에서 캡처 간격 및 유사도 임계값 로드
     capture_interval = _get_setting("screen", {}).get("capture_interval_sec", 2)
     threshold = _get_setting("screen", {}).get("change_threshold", 0.8)
@@ -234,13 +255,26 @@ def monitor_screen_changes():
             # 현재 활성 창 이름 가져오기
             active_window = GetWindowText(GetForegroundWindow())
             if active_window:
-                logger.debug(f"활성 창 감지: {active_window} - 메시지 전송 시도")
-                result = message_format.send_active_window(active_window)
-                if result:
-                    logger.debug("활성 창 메시지 전송 성공")
+                # 디바운싱: 마지막 이벤트 이후 일정 시간이 지났을 때만 처리
+                current_time = time.time() * 1000  # 현재 시간(밀리초)
+                global _last_active_window_event, _last_active_window
+                
+                if (current_time - _last_active_window_event) > 1000 or active_window != _last_active_window:
+                    # 시스템 창 목록에 없는 경우에만 메시지 전송
+                    if active_window not in SYSTEM_WINDOWS:
+                        logger.debug(f"활성 창 감지: {active_window} - 메시지 전송 시도")
+                        result = message_format.send_active_window(active_window)
+                        if result:
+                            logger.debug("활성 창 메시지 전송 성공")
+                        else:
+                            logger.warning("활성 창 메시지 전송 실패")
+                        update_user_activity()
+                        _last_active_window_event = current_time
+                        _last_active_window = active_window
+                    else:
+                        logger.debug(f"시스템 창 무시됨: {active_window}")
                 else:
-                    logger.warning("활성 창 메시지 전송 실패")
-                update_user_activity()
+                    logger.debug(f"활성 창 이벤트 무시됨 (디바운스 중): {current_time - _last_active_window_event}ms")
                 
             # 대기
             time.sleep(capture_interval)
@@ -376,18 +410,19 @@ def start_monitoring():
     # 키보드 및 마우스 활동 모니터링 시작
     keyboard_thread = threading.Thread(target=monitor_keyboard, daemon=True, name="KeyboardMonitor")
     mouse_thread = threading.Thread(target=monitor_mouse, daemon=True, name="MouseMonitor")
-    screen_thread = threading.Thread(target=monitor_screen_changes, daemon=True, name="ScreenMonitor")
-    audio_thread = threading.Thread(target=monitor_audio, daemon=True, name="AudioMonitor")
+    # screen_thread = threading.Thread(target=monitor_screen_changes, daemon=True, name="ScreenMonitor")
+    # audio_thread = threading.Thread(target=monitor_audio, daemon=True, name="AudioMonitor")
     
     # 스레드 시작
     keyboard_thread.start()
     mouse_thread.start()
-    screen_thread.start()
-    audio_thread.start()
+    # screen_thread.start()
+    # audio_thread.start()
     
     # 스레드 추적을 위해 목록에 저장
 
-    _monitoring_threads = [keyboard_thread, mouse_thread, screen_thread, audio_thread]
+    _monitoring_threads = [keyboard_thread, mouse_thread]
+    # _monitoring_threads = [keyboard_thread, mouse_thread, screen_thread, audio_thread]
     
     # 활동 모니터링 시작 메시지 전송
     start_msg = {
