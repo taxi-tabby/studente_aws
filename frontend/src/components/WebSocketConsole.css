@@ -9,9 +9,9 @@
   padding: 10px;
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.85em;
-  height: 300px;
+  height: 880px;
   overflow-y: auto;
-  max-height: 300px;
+  max-height: 880px;
 }
 
 .console-message {
