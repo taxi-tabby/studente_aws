@@ -17,6 +17,19 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.activity-indicator.disabled {
+  opacity: 0.6;
+  background-color: #f9f9f9;
+  position: relative;
+}
+
+.activity-indicator.disabled small {
+  position: absolute;
+  right: 40px;
+  color: #888;
+  font-style: italic;
+}
+
 .indicator-light {
   width: 15px;
   height: 15px;
@@ -29,6 +42,19 @@
 .indicator-light.active {
   background-color: #4CAF50;
   box-shadow: 0 0 10px #4CAF50;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
 }
 
 .active-window-name {

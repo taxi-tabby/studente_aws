@@ -4,12 +4,18 @@ import './AWSServices.css';
 
 interface EKSClustersProps {
   clusters: EKSCluster[];
+  onRefresh?: () => void;
 }
 
-const EKSClusters: React.FC<EKSClustersProps> = ({ clusters }) => {
+const EKSClusters: React.FC<EKSClustersProps> = ({ clusters, onRefresh }) => {
   return (
     <div className="dashboard-section">
-      <h2>EKS Clusters</h2>
+      <div className="section-header">
+        <h2>EKS Clusters</h2>
+        <button className="refresh-button" onClick={onRefresh}>
+          <span className="refresh-icon">🔄</span> Refresh
+        </button>
+      </div>
       {clusters.length > 0 ? (
         <table className="aws-table">
           <thead>

@@ -4,12 +4,18 @@ import './AWSServices.css';
 
 interface EC2InstancesProps {
   instances: EC2Instance[];
+  onRefresh?: () => void;
 }
 
-const EC2Instances: React.FC<EC2InstancesProps> = ({ instances }) => {
+const EC2Instances: React.FC<EC2InstancesProps> = ({ instances, onRefresh }) => {
   return (
     <div className="dashboard-section">
-      <h2>EC2 Instances</h2>
+      <div className="section-header">
+        <h2>EC2 Instances</h2>
+        <button className="refresh-button" onClick={onRefresh}>
+          <span className="refresh-icon">🔄</span> Refresh
+        </button>
+      </div>
       {instances.length > 0 ? (
         <table className="aws-table">
           <thead>

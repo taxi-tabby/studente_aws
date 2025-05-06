@@ -1,0 +1,55 @@
+.websocket-console-container {
+  margin-top: 20px;
+}
+
+.websocket-console {
+  background-color: #1e1e1e;
+  color: #f0f0f0;
+  border-radius: 5px;
+  padding: 10px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85em;
+  height: 300px;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.console-message {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+}
+
+.console-message:last-child {
+  border-bottom: none;
+}
+
+.message-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 5px;
+  color: #8a8a8a;
+}
+
+.message-timestamp {
+  color: #6a9955;
+}
+
+.message-type {
+  color: #569cd6;
+  font-weight: bold;
+}
+
+.message-source {
+  color: #ce9178;
+}
+
+.message-content {
+  margin: 0;
+  padding: 5px;
+  background-color: #252526;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  color: #dcdcdc;
+}

@@ -5,6 +5,7 @@ import ActivityMonitor from './components/ActivityMonitor'
 import EC2Instances from './components/EC2Instances'
 import ECSClusters from './components/ECSClusters'
 import EKSClusters from './components/EKSClusters'
+import WebSocketConsole from './components/WebSocketConsole'
 import type { EC2Instance, ECSCluster, EKSCluster, ActivityStatus, WebSocketMessage } from './types/aws'
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
 	const [ecsClusters, setECSClusters] = useState<ECSCluster[]>([]);
 	const [eksClusters, setEKSClusters] = useState<EKSCluster[]>([]);
 	const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
+	const [socketMessages, setSocketMessages] = useState<WebSocketMessage[]>([]);
 
 	// Mock data for development if WebSocket is not connected
 	const [useMockData, setUseMockData] = useState<boolean>(false);
@@ -31,69 +33,28 @@ function App() {
 	// WebSocket port - 백엔드 서버 포트와 일치하도록 수정
 	const WEBSOCKET_PORT = 20201; 
 
-	// 초기 화면 로딩을 위한 샘플 데이터 설정
+	// Maximum number of socket messages to store
+	const MAX_MESSAGES = 500;
+
+	// 빈 샘플 데이터 설정
 	const loadMockData = () => {
-		// Mock EC2 data
-		setEC2Instances([
-			{
-				id: 'i-12345678',
-				name: 'Web Server',
-				state: 'running',
-				type: 't3.micro',
-				zone: 'us-east-1a'
-			},
-			{
-				id: 'i-87654321',
-				name: 'Database Server',
-				state: 'stopped',
-				type: 't3.large',
-				zone: 'us-east-1b'
-			},
-			{
-				id: 'i-11223344',
-				name: 'API Server',
-				state: 'pending',
-				type: 't3.medium',
-				zone: 'us-east-1c'
-			}
-		]);
+		// Empty EC2 data
+		setEC2Instances([]);
 
-		// Mock ECS data
-		setECSClusters([
-			{
-				name: 'Production Cluster',
-				status: 'active',
-				activeServices: 5,
-				runningTasks: 12,
-				pendingTasks: 0
-			},
-			{
-				name: 'Development Cluster',
-				status: 'active',
-				activeServices: 3,
-				runningTasks: 4,
-				pendingTasks: 2
-			}
-		]);
+		// Empty ECS data
+		setECSClusters([]);
 
-		// Mock EKS data
-		setEKSClusters([
-			{
-				name: 'Main-EKS-Cluster',
-				status: 'active',
-				version: '1.27',
-				endpoint: 'https://A1B2C3D4E5F6G7H8I9J0.gr7.us-east-1.eks.amazonaws.com'
-			}
-		]);
+		// Empty EKS data
+		setEKSClusters([]);
 
-		// Mock activity data
+		// Only set active flags for keyboard, mouse movement, and mouse click
 		setActivityStatus({
-			keyboard: true,
-			mouseMovement: true,
+			keyboard: false,
+			mouseMovement: false,
 			mouseClick: false,
-			screen: true,
+			screen: false,
 			audio: false,
-			activeWindow: 'Visual Studio Code'
+			activeWindow: ''
 		});
 	};
 
@@ -150,6 +111,13 @@ function App() {
 		console.log("WebSocket 메시지 수신:", message);
 		setConnectionStatus('Connected');
 		
+		// Add the message to the console messages
+		setSocketMessages(prevMessages => {
+			// Add new message and limit to MAX_MESSAGES by removing old ones
+			const updatedMessages = [...prevMessages, message];
+			return updatedMessages.slice(Math.max(0, updatedMessages.length - MAX_MESSAGES));
+		});
+		
 		// 서비스 타입에 따라 적절한 데이터 처리
 		if (message.service === "ec2" && message.instances) {
 			setEC2Instances(message.instances);
@@ -166,6 +134,33 @@ function App() {
 			if (message.data && typeof message.data === 'object') {
 				setActivityStatus(prev => ({...prev, ...message.data}));
 			}
+		}
+		// 새로운 메시지 형식 처리: USER_ACTIVITY 타입
+		else if (message.type === "USER_ACTIVITY" && message.content?.activity) {
+			const activityType = message.content.activity;
+			
+			// 활동 유형에 따라 상태 업데이트
+			const activityUpdate: Partial<ActivityStatus> = {
+				keyboard: activityType === "KEYBOARD_ACTIVITY" ? true : false,
+				mouseMovement: activityType === "MOUSE_MOVEMENT" ? true : false,
+				mouseClick: activityType === "MOUSE_CLICK" ? true : false
+			};
+			
+			// 활동 상태 업데이트
+			setActivityStatus(prev => ({
+				...prev,
+				...activityUpdate
+			}));
+			
+			// 깜빡임 효과를 위해 잠시 후 상태 초기화
+			setTimeout(() => {
+				setActivityStatus(prev => ({
+					...prev,
+					keyboard: false,
+					mouseMovement: false,
+					mouseClick: false
+				}));
+			}, 1000);
 		}
 		// 기존 메시지 형식 지원
 		else if (message.type) {
@@ -194,10 +189,42 @@ function App() {
 					setEKSClusters(content.clusters);
 				}
 				if (content.activity) {
-					setActivityStatus(prev => ({...prev, ...content.activity}));
+					// content.activity가 문자열인 경우 (새로운 형식)
+					if (typeof content.activity === 'string') {
+						const activityType = content.activity;
+						const activityUpdate: Partial<ActivityStatus> = {
+							keyboard: activityType === "KEYBOARD_ACTIVITY" ? true : false,
+							mouseMovement: activityType === "MOUSE_MOVEMENT" ? true : false,
+							mouseClick: activityType === "MOUSE_CLICK" ? true : false
+						};
+						
+						setActivityStatus(prev => ({
+							...prev,
+							...activityUpdate
+						}));
+						
+						// 깜빡임 효과를 위해 잠시 후 상태 초기화
+						setTimeout(() => {
+							setActivityStatus(prev => ({
+								...prev,
+								keyboard: false,
+								mouseMovement: false,
+								mouseClick: false
+							}));
+						}, 1000);
+					} 
+					// 기존 형식 (객체)
+					else {
+						setActivityStatus(prev => ({...prev, ...content.activity}));
+					}
 				}
 			}
 		}
+	};
+
+	// Clear console messages
+	const clearSocketMessages = () => {
+		setSocketMessages([]);
 	};
 
 	// Try to reconnect WebSocket
@@ -227,21 +254,84 @@ function App() {
 			});
 		} else {
 			// 연결이 안되어 있으면 샘플 데이터 새로고침
-			handleUseMockData();
+			loadMockData();
 		}
 	};
 
-	// Load mock data if button is clicked
-	const handleUseMockData = () => {
-		setUseMockData(true);
-		loadMockData();
+	// 서비스별 개별 데이터 새로고침
+	const handleRefreshEC2 = () => {
+		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			webSocketClientRef.current.send({
+				action: "getEC2Instances"
+			});
+		} else {
+			// Mock data - empty for now
+			setEC2Instances([]);
+		}
 	};
+
+	const handleRefreshECS = () => {
+		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			webSocketClientRef.current.send({
+				action: "getECSClusters"
+			});
+		} else {
+			// Mock data - empty for now
+			setECSClusters([]);
+		}
+	};
+
+	const handleRefreshEKS = () => {
+		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			webSocketClientRef.current.send({
+				action: "getEKSClusters"
+			});
+		} else {
+			// Mock data - empty for now
+			setEKSClusters([]);
+		}
+	};
+
+	// Simulate activity for testing purposes
+	const simulateActivity = () => {
+		const randomKeyboard = Math.random() > 0.5;
+		const randomMouseMovement = Math.random() > 0.5;
+		const randomMouseClick = Math.random() > 0.5;
+		
+		setActivityStatus(prev => ({
+			...prev,
+			keyboard: randomKeyboard,
+			mouseMovement: randomMouseMovement,
+			mouseClick: randomMouseClick
+		}));
+		
+		// Reset after a short delay to simulate the blinking effect
+		setTimeout(() => {
+			setActivityStatus(prev => ({
+				...prev,
+				keyboard: false,
+				mouseMovement: false,
+				mouseClick: false
+			}));
+		}, 1000);
+	};
+
+	// Simulate activity periodically for demonstration
+	useEffect(() => {
+		const activityInterval = setInterval(() => {
+			if (!webSocketClientRef.current?.getConnectionStatus()) {
+				simulateActivity();
+			}
+		}, 3000);
+		
+		return () => clearInterval(activityInterval);
+	}, []);
 
 	return (
 		<>
 			<div className="dashboard-container">
 				<header className="dashboard-header">
-					<h1>AWS Monitoring Dashboard</h1>
+					<h1>Studente AWS</h1>
 					<div className="header-controls">
 						<button className="refresh-button" onClick={handleRefreshData}>
 							새로고침
@@ -261,14 +351,24 @@ function App() {
 					<ActivityMonitor activityStatus={activityStatus} />
 
 					<div className="aws-services">
-						<EC2Instances instances={ec2Instances} />
-						<ECSClusters clusters={ecsClusters} />
-						<EKSClusters clusters={eksClusters} />
+						<EC2Instances instances={ec2Instances} onRefresh={handleRefreshEC2} />
+						<ECSClusters clusters={ecsClusters} onRefresh={handleRefreshECS} />
+						<EKSClusters clusters={eksClusters} onRefresh={handleRefreshEKS} />
+					</div>
+					
+					<div className="console-section">
+						<div className="console-header">
+							<h2>WebSocket Messages</h2>
+							<button className="clear-console-button" onClick={clearSocketMessages}>
+								Clear Console
+							</button>
+						</div>
+						<WebSocketConsole messages={socketMessages} />
 					</div>
 				</main>
 
 				<footer className="dashboard-footer">
-					<p>AWS Monitor &copy; {new Date().getFullYear()}</p>
+					<p>Studente AWS &copy; {new Date().getFullYear()} by <i>rkdmf0000@gmail.com</i></p>
 				</footer>
 			</div>
 		</>

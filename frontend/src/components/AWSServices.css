@@ -7,13 +7,41 @@
   background-color: #ffffff;
 }
 
-.dashboard-section h2 {
-  margin-top: 0;
-  color: #333;
-  font-size: 1.5em;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5em;
+}
+
+.dashboard-section .refresh-button {
+  background-color: #f1f8ff;
+  border: 1px solid #cce4fd;
+  border-radius: 4px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  color: #0366d6;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+.dashboard-section .refresh-button:hover {
+  background-color: #dbecff;
+}
+
+.refresh-icon {
+  margin-right: 6px;
+  font-size: 1em;
 }
 
 .aws-table {
