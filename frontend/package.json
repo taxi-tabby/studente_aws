@@ -1,53 +1,29 @@
 {
-  "name": "aws-dashboard",
-  "displayName": "AWS Dashboard",
-  "description": "Dashboard for AWS services monitoring",
-  "version": "0.1.0",
-  "publisher": "aws-study",
-  "engines": {
-    "vscode": "^1.60.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onCommand:aws-dashboard.openDashboard"
-  ],
-  "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "aws-dashboard.openDashboard",
-        "title": "Open AWS Dashboard"
-      }
-    ]
-  },
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "lint": "eslint src --ext ts",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "test": "node ./out/test/runTest.js",
-    "package": "vsce package",
-    "dev-server": "node ./out/devServer.js",
-    "dev": "concurrently \"npm run watch\" \"npm run dev-server\""
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.60.0",
-    "@types/node": "^16.11.7",
-    "@typescript-eslint/eslint-plugin": "^5.30.0",
-    "@typescript-eslint/parser": "^5.30.0",
-    "concurrently": "^8.2.0",
-    "eslint": "^8.18.0",
-    "typescript": "^4.7.4",
-    "vsce": "^2.15.0",
-    "@types/ws": "^8.5.5",
-    "@types/express": "^4.17.17",
-    "express": "^4.18.2",
-    "nodemon": "^3.0.1"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "ws": "^8.13.0"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "vite": "^6.3.5"
   }
 }

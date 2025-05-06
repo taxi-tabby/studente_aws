@@ -1,0 +1,170 @@
+#root {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  max-width: none;
+  text-align: left;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #f0f2f5;
+}
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  background-color: #232f3e;
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.connection-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.connection-status.connected {
+  background-color: #e3f5e9;
+  color: #1e8a4c;
+}
+
+.connection-status.connecting {
+  background-color: #fff8e6;
+  color: #ba8b00;
+}
+
+.connection-status.disconnected {
+  background-color: #f8e6e6;
+  color: #c62828;
+}
+
+.retry-button, .mock-data-button, .refresh-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  color: white;
+}
+
+.refresh-button {
+  background-color: #2e7d32;
+}
+
+.refresh-button:hover {
+  background-color: #1b5e20;
+  transform: translateY(-1px);
+}
+
+.retry-button {
+  background-color: #1e8a4c;
+}
+
+.retry-button:hover {
+  background-color: #167a3c;
+  transform: translateY(-1px);
+}
+
+.retry-button:active, .mock-data-button:active, .refresh-button:active {
+  transform: translateY(0);
+}
+
+.mock-data-button {
+  background-color: #0073bb;
+}
+
+.mock-data-button:hover {
+  background-color: #005c99;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.aws-services {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 30px;
+}
+
+@media (min-width: 992px) {
+  .aws-services {
+    grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+  }
+}
+
+.dashboard-footer {
+  background-color: #232f3e;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  margin-top: auto;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}

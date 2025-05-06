@@ -71,11 +71,40 @@ def main():
     
     logger.info("AWS 인증이 성공적으로 완료되었습니다.")
     
+    # 이벤트 루프와 WebSocket 서버 초기화를 위한 별도 함수
+    def initialize_event_loop_and_websocket():
+        import asyncio
+        from core import tcp_server
+        
+        # 이벤트 루프 생성 및 설정
+        logger.info("이벤트 루프 생성 및 WebSocket 서버 초기화 중...")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # 웹소켓 서버 초기화 및 실행
+        try:
+            asyncio.run_coroutine_threadsafe(tcp_server.start_websocket_server(), loop)
+            logger.info(f"WebSocket 서버가 포트 {tcp_server.WS_PORT}에서 시작되었습니다.")
+        except Exception as e:
+            logger.error(f"WebSocket 서버 시작 중 오류 발생: {e}")
+            import traceback
+            logger.error(f"에러 상세 정보: {traceback.format_exc()}")
+            
+        # 이벤트 루프 실행
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            logger.info("키보드 인터럽트로 이벤트 루프 종료")
+        except Exception as e:
+            logger.error(f"이벤트 루프 실행 중 오류 발생: {e}")
+        finally:
+            loop.close()
+            logger.info("이벤트 루프가 종료되었습니다.")
+    
     # WebSocket 서버 시작 (별도 스레드에서)
-    ws_thread = threading.Thread(target=tcp_server.run_server)
+    ws_thread = threading.Thread(target=initialize_event_loop_and_websocket)
     ws_thread.daemon = True
     ws_thread.start()
-    logger.info(f"WebSocket 서버가 포트 {tcp_server.WS_PORT}에서 시작되었습니다.")
     
     # TCP 서버 시작 (별도 스레드에서)
     tcp_thread = threading.Thread(target=tcp_server.start_tcp_server)
@@ -97,7 +126,7 @@ def main():
         logger.info("프로그램을 종료합니다...")
     except Exception as e:
         logger.error(f"예기치 않은 오류가 발생했습니다: {e}")
-        
+    
     return 0
 
 if __name__ == "__main__":
