@@ -23,9 +23,10 @@ function App() {
 	const [eksClusters, setEKSClusters] = useState<EKSCluster[]>([]);
 	const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
 	const [socketMessages, setSocketMessages] = useState<WebSocketMessage[]>([]);
+	const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
 
 	// Mock data for development if WebSocket is not connected
-	const [useMockData, setUseMockData] = useState<boolean>(false);
+	// const [useMockData, setUseMockData] = useState<boolean>(false);
 
 	// Reference to WebSocketClient instance
 	const webSocketClientRef = useRef<WebSocketClient | null>(null);
@@ -121,6 +122,10 @@ function App() {
 		// 서비스 타입에 따라 적절한 데이터 처리
 		if (message.service === "ec2" && message.instances) {
 			setEC2Instances(message.instances);
+			// EC2 인스턴스 상태 변경 후 처리 완료
+			if (message.status === "updated") {
+				setIsProcessingAction(false);
+			}
 		}
 		else if (message.service === "ecs" && message.clusters) {
 			// Type assertion to ensure we're setting the correct cluster type
@@ -161,6 +166,18 @@ function App() {
 					mouseClick: false
 				}));
 			}, 1000);
+		}
+		// EC2 인스턴스 업데이트 처리
+		else if (message.type === "AWS_EC2_UPDATE" && message.content) {
+			if (message.content.instances) {
+				setEC2Instances(message.content.instances);
+			}
+			setIsProcessingAction(false); // 액션 처리 완료
+		}
+		// EC2 인스턴스 에러 처리
+		else if (message.type === "AWS_EC2_ERROR" && message.content) {
+			setIsProcessingAction(false); // 에러지만 액션 처리 완료
+			// 에러 메시지 표시 로직이 있다면 여기에 추가
 		}
 		// 기존 메시지 형식 지원
 		else if (message.type) {
@@ -237,8 +254,12 @@ function App() {
 			setTimeout(() => {
 				// getConnectionStatus 메서드를 통해 연결 상태 확인
 				if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+					// 표준 JSON 형식으로 메시지 전송
 					webSocketClientRef.current.send({
-						action: "getAll"
+						type: "AWS_SERVICE_LIST_ALL",
+						content: {
+							region: "ap-northeast-2"
+						}
 					});
 				}
 			}, 2000);
@@ -249,8 +270,12 @@ function App() {
 	const handleRefreshData = () => {
 		// getConnectionStatus 메서드를 통해 연결 상태 확인
 		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			// 표준 JSON 메시지 형식으로 요청
 			webSocketClientRef.current.send({
-				action: "getAll"
+				type: "AWS_SERVICE_LIST_ALL",
+				content: {
+					region: "ap-northeast-2"
+				}
 			});
 		} else {
 			// 연결이 안되어 있으면 샘플 데이터 새로고침
@@ -261,8 +286,12 @@ function App() {
 	// 서비스별 개별 데이터 새로고침
 	const handleRefreshEC2 = () => {
 		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			// EC2 인스턴스 목록 요청 (표준 JSON 형식)
 			webSocketClientRef.current.send({
-				action: "getEC2Instances"
+				type: "AWS_EC2_LIST",
+				content: {
+					region: "ap-northeast-2"
+				}
 			});
 		} else {
 			// Mock data - empty for now
@@ -272,8 +301,12 @@ function App() {
 
 	const handleRefreshECS = () => {
 		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			// ECS 클러스터 목록 요청 (표준 JSON 형식)
 			webSocketClientRef.current.send({
-				action: "getECSClusters"
+				type: "AWS_ECS_LIST",
+				content: {
+					region: "ap-northeast-2"
+				}
 			});
 		} else {
 			// Mock data - empty for now
@@ -283,12 +316,110 @@ function App() {
 
 	const handleRefreshEKS = () => {
 		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			// EKS 클러스터 목록 요청 (표준 JSON 형식)
 			webSocketClientRef.current.send({
-				action: "getEKSClusters"
+				type: "AWS_EKS_LIST",
+				content: {
+					region: "ap-northeast-2"
+				}
 			});
 		} else {
 			// Mock data - empty for now
 			setEKSClusters([]);
+		}
+	};
+
+	// EC2 인스턴스 시작 처리
+	const handleStartEC2Instance = (instanceId: string) => {
+		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			// 이미 처리 중인 작업이 있으면 무시
+			if (isProcessingAction) {
+				return;
+			}
+			
+			setIsProcessingAction(true); // 처리 중 상태 설정
+			
+			// 메시지 전송 방식 1: 기존 action 방식
+			webSocketClientRef.current.send({
+				action: "startInstance",
+				instanceId: instanceId,
+				region: "ap-northeast-2"
+			});
+			
+			// 메시지 전송 방식 2: 새로운 타입 기반 방식 (둘 중 하나만 선택)
+			// webSocketClientRef.current.send({
+			//   type: "AWS_EC2_START_INSTANCE",
+			//   content: {
+			//     instanceId: instanceId,
+			//     region: "ap-northeast-2"
+			//   }
+			// });
+			
+			// 인스턴스 상태 임시 업데이트 (UX 개선)
+			setEC2Instances(prevInstances => 
+				prevInstances.map(instance => 
+					instance.id === instanceId 
+						? { ...instance, state: 'pending' } 
+						: instance
+				)
+			);
+			
+			// 콘솔 메시지에도 기록
+			setSocketMessages(prev => [...prev, {
+				type: 'CLIENT_ACTION',
+				content: {
+					action: 'startInstance',
+					instanceId: instanceId
+				},
+				timestamp: new Date().toISOString()
+			}]);
+		}
+	};
+	
+	// EC2 인스턴스 중지 처리
+	const handleStopEC2Instance = (instanceId: string) => {
+		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			// 이미 처리 중인 작업이 있으면 무시
+			if (isProcessingAction) {
+				return;
+			}
+			
+			setIsProcessingAction(true); // 처리 중 상태 설정
+			
+			// 메시지 전송 방식 1: 기존 action 방식
+			webSocketClientRef.current.send({
+				action: "stopInstance",
+				instanceId: instanceId,
+				region: "ap-northeast-2"
+			});
+			
+			// 메시지 전송 방식 2: 새로운 타입 기반 방식 (둘 중 하나만 선택)
+			// webSocketClientRef.current.send({
+			//   type: "AWS_EC2_STOP_INSTANCE",
+			//   content: {
+			//     instanceId: instanceId,
+			//     region: "ap-northeast-2"
+			//   }
+			// });
+			
+			// 인스턴스 상태 임시 업데이트 (UX 개선)
+			setEC2Instances(prevInstances => 
+				prevInstances.map(instance => 
+					instance.id === instanceId 
+						? { ...instance, state: 'stopping' } 
+						: instance
+				)
+			);
+			
+			// 콘솔 메시지에도 기록
+			setSocketMessages(prev => [...prev, {
+				type: 'CLIENT_ACTION',
+				content: {
+					action: 'stopInstance',
+					instanceId: instanceId
+				},
+				timestamp: new Date().toISOString()
+			}]);
 		}
 	};
 
@@ -351,14 +482,19 @@ function App() {
 					<ActivityMonitor activityStatus={activityStatus} />
 
 					<div className="aws-services">
-						<EC2Instances instances={ec2Instances} onRefresh={handleRefreshEC2} />
+						<EC2Instances 
+							instances={ec2Instances} 
+							onRefresh={handleRefreshEC2} 
+							onStartInstance={handleStartEC2Instance}
+							onStopInstance={handleStopEC2Instance}
+						/>
 						<ECSClusters clusters={ecsClusters} onRefresh={handleRefreshECS} />
 						<EKSClusters clusters={eksClusters} onRefresh={handleRefreshEKS} />
 					</div>
 					
 					<div className="console-section">
 						<div className="console-header">
-							<h2>WebSocket Messages</h2>
+							<h2>Messages</h2>
 							<button className="clear-console-button" onClick={clearSocketMessages}>
 								Clear Console
 							</button>

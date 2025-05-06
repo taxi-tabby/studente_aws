@@ -186,57 +186,128 @@ export class WebSocketClient implements IWebSocketClient {
     try {
       let messageToSend: any;
       
+      // 문자열 메시지 처리 (명령어 형식)
+      if (typeof data === 'string') {
+        this.socket.send(data);
+        console.log('WebSocket 텍스트 명령어 전송:', data);
+        return;
+      }
+      
+      // 객체 메시지 처리
       if (typeof data === 'object' && data !== null) {
-        if (data.action && typeof data.action === 'string') {
-          messageToSend = { action: data.action };
-          
-          if (data.region) messageToSend.region = data.region;
-          if (data.service) messageToSend.service = data.service;
-          
-          Object.keys(data).forEach(key => {
-            if (!['action', 'region', 'service'].includes(key)) {
-              messageToSend[key] = data[key];
-            }
-          });
+        // 표준 JSON 메시지 형식 (id, type, timestamp, content)
+        if (data.type && typeof data.type === 'string') {
+          messageToSend = {
+            id: data.id || `req-${Date.now()}`,
+            type: data.type,
+            timestamp: data.timestamp || Math.floor(Date.now() / 1000),
+            source: data.source || 'web-client',
+            content: data.content || {}
+          };
         }
-        else if (data.type && typeof data.type === 'string') {
-          messageToSend = { type: data.type };
-          
-          if (data.content) messageToSend.content = data.content;
-          if (data.id) messageToSend.id = data.id;
-          
-          Object.keys(data).forEach(key => {
-            if (!['type', 'content', 'id'].includes(key)) {
-              messageToSend[key] = data[key];
-            }
-          });
+        // EC2, ECS, EKS 서비스 요청 형식
+        else if (data.action && typeof data.action === 'string') {
+          // 특정 액션에 따른 메시지 형식 조정
+          switch(data.action) {
+            case 'getAll':
+              messageToSend = {
+                id: `req-${Date.now()}`,
+                type: 'AWS_SERVICE_LIST_ALL',
+                timestamp: Math.floor(Date.now() / 1000),
+                source: 'web-client',
+                content: {
+                  region: data.region || 'ap-northeast-2'
+                }
+              };
+              break;
+              
+            case 'getEC2Instances':
+              messageToSend = {
+                id: `req-${Date.now()}`,
+                type: 'AWS_EC2_LIST',
+                timestamp: Math.floor(Date.now() / 1000),
+                source: 'web-client',
+                content: {
+                  region: data.region || 'ap-northeast-2'
+                }
+              };
+              break;
+              
+            case 'getECSClusters':
+              messageToSend = {
+                id: `req-${Date.now()}`,
+                type: 'AWS_ECS_LIST',
+                timestamp: Math.floor(Date.now() / 1000),
+                source: 'web-client',
+                content: {
+                  region: data.region || 'ap-northeast-2'
+                }
+              };
+              break;
+              
+            case 'getEKSClusters':
+              messageToSend = {
+                id: `req-${Date.now()}`,
+                type: 'AWS_EKS_LIST',
+                timestamp: Math.floor(Date.now() / 1000),
+                source: 'web-client',
+                content: {
+                  region: data.region || 'ap-northeast-2'
+                }
+              };
+              break;
+              
+            case 'refresh':
+              // 서비스 타입에 따라 적절한 메시지 형식 설정
+              const serviceActionMap: Record<string, string> = {
+                'ec2': 'AWS_EC2_LIST',
+                'ecs': 'AWS_ECS_LIST', 
+                'eks': 'AWS_EKS_LIST'
+              };
+              
+              messageToSend = {
+                id: `req-${Date.now()}`,
+                type: serviceActionMap[data.service] || 'AWS_SERVICE_LIST_ALL',
+                timestamp: Math.floor(Date.now() / 1000),
+                source: 'web-client',
+                content: {
+                  region: data.region || 'ap-northeast-2'
+                }
+              };
+              break;
+              
+            default:
+              // 기본 메시지 형식
+              messageToSend = {
+                id: `req-${Date.now()}`,
+                type: 'CLIENT_REQUEST',
+                timestamp: Math.floor(Date.now() / 1000),
+                source: 'web-client',
+                content: data
+              };
+              break;
+          }
         }
         else {
+          // 기타 데이터는 content로 래핑
           messageToSend = {
-            action: "clientRequest",
-            data: data
+            id: `req-${Date.now()}`,
+            type: 'CLIENT_DATA',
+            timestamp: Math.floor(Date.now() / 1000),
+            source: 'web-client',
+            content: data
           };
         }
       }
-      else if (typeof data === 'string') {
-        messageToSend = {
-          action: "message",
-          text: data
-        };
-      }
       else {
+        // 원시 타입 데이터 처리
         messageToSend = {
-          action: "data",
-          value: data
+          id: `req-${Date.now()}`,
+          type: 'CLIENT_DATA',
+          timestamp: Math.floor(Date.now() / 1000),
+          source: 'web-client',
+          content: { value: data }
         };
-      }
-      
-      // 특수 액션 처리
-      if (messageToSend.action === "getAll") {
-        messageToSend.region = messageToSend.region || "ap-northeast-2";
-      }
-      else if (messageToSend.action === "refresh" && messageToSend.service) {
-        messageToSend.region = messageToSend.region || "ap-northeast-2";
       }
       
       const jsonString = JSON.stringify(messageToSend);

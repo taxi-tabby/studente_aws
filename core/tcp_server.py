@@ -228,6 +228,50 @@ async def process_ws_message(data):
             await broadcast_to_ws_clients(activity_response)
             return {"status": "success", "message": "모니터링이 시작되었습니다."}
         
+        # EC2 인스턴스 시작 명령 처리
+        elif action == "startInstance" and "instanceId" in data:
+            instance_id = data.get("instanceId")
+            logger.info(f"EC2 인스턴스 시작 요청: {instance_id}, 리전: {region}")
+            
+            # EC2 인스턴스 시작
+            success = aws_services.start_ec2_instance(instance_id, region)
+            
+            if success:
+                # 성공 시 최신 EC2 인스턴스 정보 조회 및 전송
+                instances = aws_services.list_ec2_instances(region)
+                ec2_response = {
+                    "service": "ec2",
+                    "instances": instances,
+                    "status": "updated",
+                    "message": f"인스턴스 {instance_id}가 시작되었습니다."
+                }
+                await broadcast_to_ws_clients(ec2_response)
+                return {"status": "success", "message": f"인스턴스 {instance_id}가 시작되었습니다."}
+            else:
+                return {"status": "error", "message": f"인스턴스 {instance_id} 시작 실패"}
+        
+        # EC2 인스턴스 중지 명령 처리
+        elif action == "stopInstance" and "instanceId" in data:
+            instance_id = data.get("instanceId")
+            logger.info(f"EC2 인스턴스 중지 요청: {instance_id}, 리전: {region}")
+            
+            # EC2 인스턴스 중지
+            success = aws_services.stop_ec2_instance(instance_id, region)
+            
+            if success:
+                # 성공 시 최신 EC2 인스턴스 정보 조회 및 전송
+                instances = aws_services.list_ec2_instances(region)
+                ec2_response = {
+                    "service": "ec2",
+                    "instances": instances,
+                    "status": "updated",
+                    "message": f"인스턴스 {instance_id}가 중지되었습니다."
+                }
+                await broadcast_to_ws_clients(ec2_response)
+                return {"status": "success", "message": f"인스턴스 {instance_id}가 중지되었습니다."}
+            else:
+                return {"status": "error", "message": f"인스턴스 {instance_id} 중지 실패"}
+        
         # getAll 명령어 처리
         if action == "getAll":
             logger.info(f"모든 AWS 서비스 데이터 요청 - 리전: {region}")
@@ -268,6 +312,76 @@ async def process_ws_message(data):
             await broadcast_to_ws_clients(response)
             logger.info(f"EC2 인스턴스 목록 브로드캐스트: {len(instances)}개")
             return response
+            
+        # AWS EC2 인스턴스 시작 요청 처리
+        elif message_type == "AWS_EC2_START_INSTANCE" and "content" in data and "instanceId" in data["content"]:
+            instance_id = data["content"]["instanceId"]
+            logger.info(f"EC2 인스턴스 시작 요청: {instance_id}, 리전: {region}")
+            
+            # EC2 인스턴스 시작
+            success = aws_services.start_ec2_instance(instance_id, region)
+            
+            if success:
+                # 성공 시 최신 EC2 인스턴스 정보 조회 및 전송
+                instances = aws_services.list_ec2_instances(region)
+                response = message_format.create_message(
+                    "AWS_EC2_UPDATE", 
+                    {
+                        "instances": instances,
+                        "action": "start",
+                        "instanceId": instance_id,
+                        "success": True
+                    }
+                )
+                await broadcast_to_ws_clients(response)
+                logger.info(f"EC2 인스턴스 {instance_id} 시작 성공")
+                return response
+            else:
+                response = message_format.create_message(
+                    "AWS_EC2_ERROR", 
+                    {
+                        "action": "start",
+                        "instanceId": instance_id,
+                        "success": False,
+                        "message": f"인스턴스 {instance_id} 시작 실패"
+                    }
+                )
+                return response
+                
+        # AWS EC2 인스턴스 중지 요청 처리
+        elif message_type == "AWS_EC2_STOP_INSTANCE" and "content" in data and "instanceId" in data["content"]:
+            instance_id = data["content"]["instanceId"]
+            logger.info(f"EC2 인스턴스 중지 요청: {instance_id}, 리전: {region}")
+            
+            # EC2 인스턴스 중지
+            success = aws_services.stop_ec2_instance(instance_id, region)
+            
+            if success:
+                # 성공 시 최신 EC2 인스턴스 정보 조회 및 전송
+                instances = aws_services.list_ec2_instances(region)
+                response = message_format.create_message(
+                    "AWS_EC2_UPDATE", 
+                    {
+                        "instances": instances,
+                        "action": "stop",
+                        "instanceId": instance_id,
+                        "success": True
+                    }
+                )
+                await broadcast_to_ws_clients(response)
+                logger.info(f"EC2 인스턴스 {instance_id} 중지 성공")
+                return response
+            else:
+                response = message_format.create_message(
+                    "AWS_EC2_ERROR", 
+                    {
+                        "action": "stop",
+                        "instanceId": instance_id,
+                        "success": False,
+                        "message": f"인스턴스 {instance_id} 중지 실패"
+                    }
+                )
+                return response
     
     logger.warning(f"알 수 없는 메시지 형식: {data}")
     return {"status": "error", "message": "알 수 없는 메시지 형식입니다."}
@@ -495,6 +609,62 @@ def process_structured_message(message, client_socket):
         # 활동 모니터링 시작 명령 처리
         if action == "startMonitoring":
             start_activity_monitoring(client_socket)
+            return
+        
+        # EC2 인스턴스 시작 명령 처리
+        elif action == "startInstance" and "instanceId" in message:
+            instance_id = message.get("instanceId")
+            logger.info(f"EC2 인스턴스 시작 요청 (TCP): {instance_id}, 리전: {region}")
+            
+            # EC2 인스턴스 시작
+            success = aws_services.start_ec2_instance(instance_id, region)
+            
+            if success:
+                # 성공 시 최신 EC2 인스턴스 정보 조회 및 전송
+                instances = aws_services.list_ec2_instances(region)
+                ec2_response = {
+                    "service": "ec2",
+                    "instances": instances,
+                    "status": "updated",
+                    "message": f"인스턴스 {instance_id}가 시작되었습니다."
+                }
+                client_socket.sendall(json.dumps(ec2_response, ensure_ascii=False).encode())
+                logger.info(f"EC2 인스턴스 {instance_id} 시작 성공 (TCP)")
+            else:
+                error_response = {
+                    "status": "error",
+                    "message": f"인스턴스 {instance_id} 시작 실패"
+                }
+                client_socket.sendall(json.dumps(error_response, ensure_ascii=False).encode())
+                logger.error(f"EC2 인스턴스 {instance_id} 시작 실패 (TCP)")
+            return
+        
+        # EC2 인스턴스 중지 명령 처리
+        elif action == "stopInstance" and "instanceId" in message:
+            instance_id = message.get("instanceId")
+            logger.info(f"EC2 인스턴스 중지 요청 (TCP): {instance_id}, 리전: {region}")
+            
+            # EC2 인스턴스 중지
+            success = aws_services.stop_ec2_instance(instance_id, region)
+            
+            if success:
+                # 성공 시 최신 EC2 인스턴스 정보 조회 및 전송
+                instances = aws_services.list_ec2_instances(region)
+                ec2_response = {
+                    "service": "ec2",
+                    "instances": instances,
+                    "status": "updated",
+                    "message": f"인스턴스 {instance_id}가 중지되었습니다."
+                }
+                client_socket.sendall(json.dumps(ec2_response, ensure_ascii=False).encode())
+                logger.info(f"EC2 인스턴스 {instance_id} 중지 성공 (TCP)")
+            else:
+                error_response = {
+                    "status": "error",
+                    "message": f"인스턴스 {instance_id} 중지 실패"
+                }
+                client_socket.sendall(json.dumps(error_response, ensure_ascii=False).encode())
+                logger.error(f"EC2 인스턴스 {instance_id} 중지 실패 (TCP)")
             return
         
         # getAll 명령어 처리
