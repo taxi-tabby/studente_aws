@@ -7,3 +7,4 @@ numpy>=1.23.0
 pywin32>=305; platform_system == "Windows"
 PyYAML>=6.0
 websockets>=11.0.3
+psutil>=5.9.0

@@ -6,6 +6,7 @@ import sys
 import logging
 import tkinter as tk
 from tkinter import messagebox
+import threading
 
 # 로깅 설정
 logging.basicConfig(
@@ -24,19 +25,38 @@ from core import tcp_server
 from core.aws_auth import aws_auth
 from core.config.config_loader import config
 
+def start_activity_monitoring_async():
+    """활동 모니터링을 별도 스레드에서 시작합니다."""
+    # 최대 3번까지 재시도
+    for attempt in range(3):
+        try:
+            logger.info(f"활동 모니터링 시작 시도 중... (시도 {attempt+1}/3)")
+            if activity_monitor.start_monitoring():
+                logger.info("활동 모니터링이 성공적으로 시작되었습니다.")
+                return True
+            else:
+                logger.warning(f"활동 모니터링 시작 실패. {attempt+1}번 째 시도.")
+                time.sleep(3)  # 3초 대기 후 재시도
+        except Exception as e:
+            logger.error(f"활동 모니터링 시작 중 오류 발생: {e}")
+            time.sleep(3)
+    
+    logger.error("활동 모니터링을 시작할 수 없습니다. 최대 재시도 횟수를 초과했습니다.")
+    return False
+
 def main():
     """애플리케이션의 메인 함수"""
     logger.info("AWS 서비스 관리 및 사용자 활동 모니터링 애플리케이션을 시작합니다...")
     
-    # 중복 실행 체크
-    if activity_monitor.is_already_running():
-        # GUI로 중복 실행 메시지 표시
-        root = tk.Tk()
-        root.withdraw()  # 메인 윈도우 숨기기
-        messagebox.showerror("오류", "프로그램이 이미 실행 중입니다!")
-        root.destroy()
-        logger.warning("프로그램이 이미 실행 중입니다. 종료합니다.")
-        return
+    # 중복 실행 체크는 모니터링 시작시 처리하도록 변경
+    # if activity_monitor.is_already_running():
+    #     # GUI로 중복 실행 메시지 표시
+    #     root = tk.Tk()
+    #     root.withdraw()  # 메인 윈도우 숨기기
+    #     messagebox.showerror("오류", "프로그램이 이미 실행 중입니다!")
+    #     root.destroy()
+    #     logger.warning("프로그램이 이미 실행 중입니다. 종료합니다.")
+    #     return
     
     # AWS 인증 처리
     logger.info("AWS 인증을 시작합니다...")
@@ -51,12 +71,22 @@ def main():
     
     logger.info("AWS 인증이 성공적으로 완료되었습니다.")
     
-    # TCP 서버 시작
-    tcp_server.run_server()
-    logger.info(f"TCP 서버가 포트 {config.get('tcp_server', 'port', 20200)}에서 시작되었습니다.")
+    # WebSocket 서버 시작 (별도 스레드에서)
+    ws_thread = threading.Thread(target=tcp_server.run_server)
+    ws_thread.daemon = True
+    ws_thread.start()
+    logger.info(f"WebSocket 서버가 포트 {tcp_server.WS_PORT}에서 시작되었습니다.")
     
-    # 사용자 활동 모니터링 시작
-    activity_monitor.start_monitoring()
+    # TCP 서버 시작 (별도 스레드에서)
+    tcp_thread = threading.Thread(target=tcp_server.start_tcp_server)
+    tcp_thread.daemon = True
+    tcp_thread.start()
+    logger.info(f"TCP 서버가 포트 {tcp_server.TCP_PORT}에서 시작되었습니다.")
+    
+    # 사용자 활동 모니터링 시작 (별도 스레드에서)
+    activity_thread = threading.Thread(target=start_activity_monitoring_async)
+    activity_thread.daemon = True
+    activity_thread.start()
     
     # 프로그램이 계속 실행되도록 유지
     logger.info("모든 서비스가 시작되었습니다. 프로그램을 종료하려면 Ctrl+C를 누르세요.")

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { TcpClient } from './tcpClient';
+import { WebSocketClient } from './wsClient';
 
 export class DashboardPanel {
 	// Track the current panel
@@ -10,7 +10,7 @@ export class DashboardPanel {
 	private readonly _panel: vscode.WebviewPanel;
 	private readonly _extensionUri: vscode.Uri;
 	private _disposables: vscode.Disposable[] = [];
-	private _tcpClient: TcpClient;
+	private _wsClient: WebSocketClient;
 
 	public static createOrShow(extensionUri: vscode.Uri) {
 		const column = vscode.window.activeTextEditor
@@ -50,11 +50,14 @@ export class DashboardPanel {
 		// Set the webview's initial HTML content
 		this._update();
 
-		// Connect to the TCP server
-		this._tcpClient = new TcpClient(message => {
-			this._panel.webview.postMessage({ type: 'wsMessage', data: message });
-		});
-		this._tcpClient.connect();
+		// Connect to WebSocket server
+		this._wsClient = new WebSocketClient(
+			20201,  // 포트 번호를 20201로 변경
+			(message: any) => {  // Added type annotation for the message parameter
+				this._panel.webview.postMessage({ type: 'wsMessage', data: message });
+			}
+		);
+		this._wsClient.connect();
 
 		// Listen for when the panel is disposed
 		// This happens when the user closes the panel or when the panel is closed programmatically
@@ -65,7 +68,7 @@ export class DashboardPanel {
 			message => {
 				switch (message.command) {
 					case 'sendWs':
-						this._tcpClient.send(message.data);
+						this._wsClient.send(message.data);
 						return;
 					case 'refreshData':
 						// Implement refresh functionality if needed
@@ -81,7 +84,7 @@ export class DashboardPanel {
 		DashboardPanel.currentPanel = undefined;
 
 		// Clean up resources
-		this._tcpClient.disconnect();
+		this._wsClient.disconnect();
 		this._panel.dispose();
 
 		while (this._disposables.length) {

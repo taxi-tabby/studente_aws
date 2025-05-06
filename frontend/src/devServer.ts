@@ -9,8 +9,8 @@ import * as fs from 'fs';
 const app = express();
 const port = 3000;
 const tcpPort = 20200;
+const wsPort = 20201; // WebSocket 서버 포트 업데이트
 const tcpHost = '127.0.0.1';
-const wsPort = 8080;
 
 // Add JSON support for API
 app.use(express.json());
@@ -307,5 +307,5 @@ console.log('AWS Dashboard Development Server');
 console.log('=============================================');
 console.log('- Web UI:       http://localhost:3000');
 console.log(`- TCP Client:   connected to ${tcpHost}:${tcpPort}`);
-console.log(`- WebSocket:    running on ws://localhost:${port}`);
+console.log(`- WebSocket:    running on ws://localhost:${wsPort}`);
 console.log('=============================================\n');

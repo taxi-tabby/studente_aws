@@ -20,12 +20,12 @@ logger.setLevel(logging.DEBUG)
 
 # 서버 설정
 SERVER_IP = "127.0.0.1"
-TCP_PORT = 20200
-WS_PORT = 20200  # 같은 포트에서 동작하지만 WebSocket 프로토콜 사용
+WS_PORT = 20201  # WebSocket 서버 포트 (TCP와 다른 포트 사용)
+TCP_PORT = 20200  # TCP 서버 포트
 
 # 클라이언트 연결 목록
-tcp_clients = []
 ws_clients = set()
+tcp_clients = []
 
 # AWS 리전 설정
 aws_regions = config.settings.get("aws", {}).get("regions", ["ap-northeast-2"])
@@ -489,48 +489,91 @@ def process_structured_message(message, client_socket):
         if action == "startMonitoring":
             logger.info("TCP 클라이언트로부터 활동 모니터링 시작 요청 수신")
             
-            # 활동 모니터링 시작 코드 호출
-            from core import activity_monitor
-            try:
-                # 활동 모니터링 모듈 시작 시도
-                if not hasattr(activity_monitor, 'is_monitoring_active') or not activity_monitor.is_monitoring_active():
-                    activity_monitor.start_monitoring()
-                    logger.info("활동 모니터링이 성공적으로 시작되었습니다.")
-                else:
-                    logger.info("활동 모니터링이 이미 실행 중입니다.")
-                
-                # 응답 생성
-                activity_response = {
-                    "service": "activity",
-                    "status": "started",
-                    "message": "활동 모니터링이 시작되었습니다."
-                }
-                
-                # TCP 클라이언트에 응답 전송
-                client_socket.sendall(json.dumps(activity_response, ensure_ascii=False).encode())
-                logger.info("TCP 클라이언트에 활동 모니터링 시작 응답을 전송했습니다.")
-                
-                # WebSocket 클라이언트에게도 브로드캐스트
+            # 활동 모니터링 시작 코드 호출 - 블로킹 방지를 위해 별도 스레드로 처리
+            def start_monitoring_thread():
+                from core import activity_monitor
                 try:
-                    new_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(new_loop)
-                    new_loop.run_until_complete(broadcast_to_ws_clients(activity_response))
-                    new_loop.close()
-                    logger.info("모든 WebSocket 클라이언트에 활동 모니터링 시작 메시지를 브로드캐스트했습니다.")
+                    # 활동 모니터링 모듈 시작 시도
+                    if not hasattr(activity_monitor, 'is_monitoring_active') or not activity_monitor.is_monitoring_active():
+                        # 이미 실행 중인 프로세스가 있으면 강제 종료 후 시작
+                        if activity_monitor.is_already_running():
+                            logger.warning("이미 실행 중인 활동 모니터링 프로세스를 종료합니다.")
+                            activity_monitor.find_and_kill_lock_process()
+                            time.sleep(3)  # 완전히 종료될 시간 제공
+                            
+                        result = activity_monitor.start_monitoring()
+                        if result:
+                            logger.info("활동 모니터링이 성공적으로 시작되었습니다.")
+                            success = True
+                        else:
+                            logger.warning("활동 모니터링 시작에 실패했습니다.")
+                            success = False
+                    else:
+                        logger.info("활동 모니터링이 이미 실행 중입니다.")
+                        success = True
+                    
+                    # 성공 여부에 따른 응답 메시지 생성
+                    if success:
+                        activity_response = {
+                            "service": "activity",
+                            "status": "started",
+                            "message": "활동 모니터링이 시작되었습니다."
+                        }
+                    else:
+                        activity_response = {
+                            "service": "activity",
+                            "status": "error",
+                            "message": "활동 모니터링 시작에 실패했습니다."
+                        }
+                    
+                    # TCP 클라이언트에 응답 전송
+                    try:
+                        client_socket.sendall(json.dumps(activity_response, ensure_ascii=False).encode())
+                        logger.info("TCP 클라이언트에 활동 모니터링 시작 응답을 전송했습니다.")
+                    except Exception as e:
+                        logger.error(f"TCP 응답 전송 중 오류: {e}")
+                    
+                    # WebSocket 클라이언트에게도 브로드캐스트
+                    try:
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        new_loop.run_until_complete(broadcast_to_ws_clients(activity_response))
+                        new_loop.close()
+                        logger.info("모든 WebSocket 클라이언트에 활동 모니터링 시작 메시지를 브로드캐스트했습니다.")
+                    except Exception as e:
+                        logger.error(f"WebSocket 브로드캐스트 중 오류 발생: {e}")
+                        
                 except Exception as e:
-                    logger.error(f"WebSocket 브로드캐스트 중 오류 발생: {e}")
-                
-                return
+                    logger.error(f"활동 모니터링 시작 스레드에서 오류 발생: {e}")
+                    logger.debug(f"에러 상세 정보: {traceback.format_exc()}")
+                    try:
+                        error_response = {
+                            "service": "activity",
+                            "status": "error",
+                            "message": f"활동 모니터링 시작 중 오류 발생: {str(e)}"
+                        }
+                        client_socket.sendall(json.dumps(error_response, ensure_ascii=False).encode())
+                    except:
+                        pass
+            
+            # 스레드를 시작하여 비동기적으로 처리
+            monitor_thread = threading.Thread(target=start_monitoring_thread)
+            monitor_thread.daemon = True
+            monitor_thread.start()
+            
+            # 임시 응답을 즉시 반환하여 클라이언트가 기다리지 않도록 함
+            temp_response = {
+                "service": "activity",
+                "status": "processing",
+                "message": "활동 모니터링 시작 처리 중..."
+            }
+            try:
+                client_socket.sendall(json.dumps(temp_response, ensure_ascii=False).encode())
+                logger.debug("임시 응답이 TCP 클라이언트에 전송되었습니다.")
             except Exception as e:
-                logger.error(f"활동 모니터링 시작 중 오류 발생: {e}")
-                logger.debug(f"에러 상세 정보: {traceback.format_exc()}")
-                error_response = {
-                    "service": "activity",
-                    "status": "error",
-                    "message": f"활동 모니터링 시작 중 오류 발생: {str(e)}"
-                }
-                client_socket.sendall(json.dumps(error_response, ensure_ascii=False).encode())
-                return
+                logger.error(f"임시 응답 전송 중 오류: {e}")
+            
+            return
         
         # getAll 명령어 처리
         elif action == "getAll":
@@ -615,7 +658,7 @@ def process_structured_message(message, client_socket):
                 asyncio.set_event_loop(new_loop)
                 new_loop.run_until_complete(broadcast_to_ws_clients(activity_response))
                 new_loop.close()
-                logger.debug("활동 로그 WebSocket 브로드캐스트 완료")
+                logger.debug("활동 로그 Web브로드캐스트 완료")
             except Exception as e:
                 logger.error(f"활동 로그 브로드캐스트 중 오류: {e}")
                 
@@ -633,7 +676,21 @@ def process_structured_message(message, client_socket):
                         "service": "ec2",
                         "instances": instances
                     }
+                    # 클라이언트에 직접 응답 전송 (중복 방지를 위해 이 부분만 수정)
+                    client_socket.sendall(json.dumps(response, ensure_ascii=False).encode())
                     logger.info(f"EC2 인스턴스 {len(instances)}개 조회됨")
+                    
+                    # WebSocket 클라이언트에게 브로드캐스트
+                    try:
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        new_loop.run_until_complete(broadcast_to_ws_clients(response))
+                        new_loop.close()
+                    except Exception as e:
+                        logger.error(f"WebSocket 브로드캐스트 중 오류: {e}")
+                    
+                    # 중복 응답 방지를 위해 response 변수 초기화
+                    response = None
                 except Exception as e:
                     logger.error(f"EC2 데이터 조회 중 오류 발생: {e}")
                     response = {
@@ -649,7 +706,21 @@ def process_structured_message(message, client_socket):
                         "service": "ecs",
                         "clusters": clusters
                     }
+                    # 클라이언트에 직접 응답 전송 (중복 방지를 위해 이 부분만 수정)
+                    client_socket.sendall(json.dumps(response, ensure_ascii=False).encode())
                     logger.info(f"ECS 클러스터 {len(clusters)}개 조회됨")
+                    
+                    # WebSocket 클라이언트에게 브로드캐스트
+                    try:
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        new_loop.run_until_complete(broadcast_to_ws_clients(response))
+                        new_loop.close()
+                    except Exception as e:
+                        logger.error(f"WebSocket 브로드캐스트 중 오류: {e}")
+                    
+                    # 중복 응답 방지를 위해 response 변수 초기화
+                    response = None
                 except Exception as e:
                     logger.error(f"ECS 데이터 조회 중 오류 발생: {e}")
                     response = {
@@ -665,7 +736,21 @@ def process_structured_message(message, client_socket):
                         "service": "eks",
                         "clusters": clusters
                     }
+                    # 클라이언트에 직접 응답 전송 (중복 방지를 위해 이 부분만 수정)
+                    client_socket.sendall(json.dumps(response, ensure_ascii=False).encode())
                     logger.info(f"EKS 클러스터 {len(clusters)}개 조회됨")
+                    
+                    # WebSocket 클라이언트에게 브로드캐스트
+                    try:
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        new_loop.run_until_complete(broadcast_to_ws_clients(response))
+                        new_loop.close()
+                    except Exception as e:
+                        logger.error(f"WebSocket 브로드캐스트 중 오류: {e}")
+                    
+                    # 중복 응답 방지를 위해 response 변수 초기화
+                    response = None
                 except Exception as e:
                     logger.error(f"EKS 데이터 조회 중 오류 발생: {e}")
                     response = {
@@ -794,9 +879,24 @@ async def start_websocket_server():
     
     try:
         logger.info(f"WebSocket 서버가 {SERVER_IP}:{WS_PORT}에서 시작됩니다.")
-        async with websockets.serve(handle_websocket, SERVER_IP, WS_PORT):
-            logger.info("WebSocket 서버가 시작되었습니다. 클라이언트 연결을 기다리는 중...")
-            await asyncio.Future()  # 무한정 실행
+        
+        # WebSocket 서버 설정 개선
+        # max_size를 늘리고, ping_interval을 설정하여 연결 안정성 향상
+        # close_timeout을 늘려 비정상적인 종료에 대한 유예 시간 제공
+        # max_queue를 늘려 많은 클라이언트가 대기할 수 있도록 함
+        server = await websockets.serve(
+            handle_websocket, 
+            SERVER_IP, 
+            WS_PORT,
+            max_size=10 * 1024 * 1024,  # 최대 메시지 크기 10MB
+            ping_interval=30,  # 30초마다 ping 전송
+            ping_timeout=10,   # ping 응답 10초 타임아웃
+            close_timeout=5,   # 연결 종료 5초 타임아웃
+            max_queue=32       # 메시지 큐 크기 증가
+        )
+        
+        logger.info("WebSocket 서버가 시작되었습니다. 클라이언트 연결을 기다리는 중...")
+        await asyncio.Future()  # 무한정 실행
     except Exception as e:
         logger.error(f"WebSocket 서버 오류 발생: {e}")
         logger.debug(f"에러 상세 정보: {traceback.format_exc()}")
@@ -804,7 +904,7 @@ async def start_websocket_server():
         logger.info("WebSocket 서버가 종료되었습니다.")
 
 def run_server():
-    """TCP 및 WebSocket 서버를 별도의 스레드에서 실행합니다."""    
+    """WebSocket 서버만 실행합니다."""    
     # 기본 로깅 설정
     logging.basicConfig(
         level=logging.DEBUG,  # 디버깅 목적으로 DEBUG 레벨 사용
@@ -815,17 +915,24 @@ def run_server():
         ]
     )
     
-    logger.info("========== TCP/WebSocket 서버 시작 ==========")
+    logger.info("========== WebSocket 서버 시작 ==========")
     logger.info(f"기본 AWS 리전: {DEFAULT_REGION}")
     
-    # TCP 서버 시작
-    tcp_thread = threading.Thread(target=start_tcp_server, daemon=True, name="TCP-Server")
-    tcp_thread.start()
-    logger.info("TCP 서버 스레드 시작됨")
+    # 활동 모니터링 시작
+    try:
+        from core import activity_monitor
+        logger.info("활동 모니터링 모듈 시작 시도 중...")
+        result = activity_monitor.start_monitoring()
+        if result:
+            logger.info("활동 모니터링이 성공적으로 시작되었습니다.")
+        else:
+            logger.warning("활동 모니터링이 이미 실행 중이거나 시작할 수 없습니다.")
+    except Exception as e:
+        logger.error(f"활동 모니터링 시작 중 오류: {e}")
     
     # WebSocket 서버 시작 (메인 스레드에서 실행)
-    logger.info("웹소켓 서버 시작 중...")
     try:
+        logger.info(f"WebSocket 서버를 {SERVER_IP}:{WS_PORT}에서 시작합니다.")
         asyncio.run(start_websocket_server())
     except KeyboardInterrupt:
         logger.info("사용자에 의해 서버가 종료되었습니다.")
@@ -833,5 +940,5 @@ def run_server():
         logger.error(f"서버 실행 중 예상치 못한 오류 발생: {e}")
         logger.debug(f"에러 상세 정보: {traceback.format_exc()}")
     
-    logger.info("========== TCP/WebSocket 서버 종료 ==========")
-    return tcp_thread
+    logger.info("========== WebSocket 서버 종료 ==========")
+    return None  # TCP thread 반환하지 않음
