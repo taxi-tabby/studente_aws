@@ -1,0 +1,58 @@
+{
+    "activity_monitor": {
+        "inactivity_timeout_minutes": 30,
+        "keyboard": {
+            "enabled": true,
+            "debounce_ms": 500
+        },
+        "mouse": {
+            "enabled": true,
+            "movement_debounce_ms": 1000,
+            "click_debounce_ms": 500,
+            "movement_threshold": 5
+        },
+        "screen": {
+            "enabled": true,
+            "capture_interval_sec": 2,
+            "change_threshold": 0.8,
+            "interval_seconds": 5,
+            "diff_threshold": 0.05
+        },
+        "audio": {
+            "enabled": true,
+            "sample_rate": 44100,
+            "channels": 1,
+            "chunk_size": 1024,
+            "threshold": 500,
+            "check_interval_ms": 100,
+            "interval_seconds": 2,
+            "volume_threshold": 0.01
+        },
+        "window": {
+            "enabled": true,
+            "check_interval_sec": 1,
+            "interval_seconds": 2
+        }
+    },
+    "aws": {
+        "regions": [
+            "us-east-1",
+            "us-west-1",
+            "us-west-2",
+            "eu-west-1",
+            "ap-northeast-2"
+        ],
+        "credentials": {
+            "use_profile": false,
+            "profile_name": "default",
+            "store_credentials": true,
+            "save": true
+        },
+        "service_state_check_interval_minutes": 5
+    },
+    "udp_server": {
+        "ip": "127.0.0.1",
+        "port": 20200,
+        "buffer_size": 4096
+    }
+}

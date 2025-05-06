@@ -1,0 +1,230 @@
+:root {
+  --vscode-font: var(--vscode-editor-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif);
+  --container-padding: 20px;
+  --section-margin: 16px;
+  
+  /* Fallback colors for development environment */
+  --vscode-editor-foreground: #333;
+  --vscode-editor-background: #fff;
+  --vscode-titleBar-activeForeground: #333;
+  --vscode-panel-border: #e0e0e0;
+  --vscode-panelTitle-activeForeground: #444;
+  --vscode-editor-inactiveSelectionBackground: #f5f5f5;
+  --vscode-button-background: #0078d4;
+  --vscode-button-foreground: white;
+  --vscode-button-hoverBackground: #106ebe;
+  --vscode-sideBar-background: #f9f9f9;
+  --vscode-button-secondaryBackground: #eaeaea;
+  --vscode-button-secondaryForeground: #333;
+  --vscode-button-secondaryHoverBackground: #d0d0d0;
+  --vscode-descriptionForeground: #717171;
+  --vscode-charts-green: #388e3c;
+  --vscode-charts-yellow: #f9a825;
+  --vscode-charts-red: #d32f2f;
+}
+
+/* Dark theme for development mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --vscode-editor-foreground: #e0e0e0;
+    --vscode-editor-background: #1e1e1e;
+    --vscode-titleBar-activeForeground: #ffffff;
+    --vscode-panel-border: #3c3c3c;
+    --vscode-panelTitle-activeForeground: #e0e0e0;
+    --vscode-editor-inactiveSelectionBackground: #2d2d2d;
+    --vscode-button-background: #0e639c;
+    --vscode-button-foreground: white;
+    --vscode-button-hoverBackground: #1177bb;
+    --vscode-sideBar-background: #252526;
+    --vscode-button-secondaryBackground: #3c3c3c;
+    --vscode-button-secondaryForeground: #e0e0e0;
+    --vscode-button-secondaryHoverBackground: #4e4e4e;
+    --vscode-descriptionForeground: #909090;
+  }
+}
+
+body {
+  font-family: var(--vscode-font);
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  padding: 0;
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: var(--vscode-titleBar-activeForeground);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 10px;
+}
+
+h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: var(--vscode-panelTitle-activeForeground);
+}
+
+.container {
+  padding: var(--container-padding);
+  max-width: 100%;
+}
+
+.dashboard-section {
+  margin-bottom: var(--section-margin);
+  padding: 15px;
+  background-color: var(--vscode-editor-inactiveSelectionBackground);
+  border-radius: 4px;
+}
+
+.service-container {
+  margin-top: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-editor-background);
+  padding: 10px;
+}
+
+.log-container {
+  height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-editor-background);
+  padding: 10px;
+  font-family: var(--vscode-font);
+  font-size: 13px;
+}
+
+.refresh-btn {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 2px;
+  margin-bottom: 10px;
+}
+
+.refresh-btn:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.instance-item, .cluster-item {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-sideBar-background);
+  border-radius: 3px;
+}
+
+.instance-name, .cluster-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.instance-details, .cluster-details {
+  font-size: 13px;
+}
+
+.instance-actions, .cluster-actions {
+  margin-top: 8px;
+}
+
+.action-btn {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  padding: 4px 8px;
+  margin-right: 5px;
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+.action-btn:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.log-entry {
+  margin-bottom: 5px;
+  padding: 4px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.log-timestamp {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.running {
+  color: var(--vscode-charts-green);
+}
+
+.stopped {
+  color: var(--vscode-charts-red);
+}
+
+.pending {
+  color: var(--vscode-charts-yellow);
+}
+
+/* Data table styling */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.data-table th {
+  background-color: var(--vscode-editor-inactiveSelectionBackground);
+  text-align: left;
+  padding: 8px;
+  border-bottom: 2px solid var(--vscode-panel-border);
+}
+
+.data-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.data-table tr:hover {
+  background-color: var(--vscode-editor-inactiveSelectionBackground);
+}
+
+/* Connection status indicator */
+.connection-status {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background-color: var(--vscode-sideBar-background);
+  padding: 5px 10px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--vscode-panel-border);
+  font-size: 12px;
+}
+
+.indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.connected {
+  background-color: var(--vscode-charts-green);
+}
+
+.disconnected {
+  background-color: var(--vscode-charts-red);
+}
+
+.timestamp {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.8em;
+  margin-right: 5px;
+}

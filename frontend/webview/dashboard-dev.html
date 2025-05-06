@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="dashboard.css" rel="stylesheet">
+  <title>AWS Dashboard (Development)</title>
+</head>
+<body>
+  <div class="container">
+    <h1>AWS Services Dashboard</h1>
+    
+    <div class="dashboard-section">
+      <h2>EC2 Instances</h2>
+      <button class="refresh-btn" data-service="ec2">Refresh EC2</button>
+      <div id="ec2-instances" class="service-container">
+        <p>Loading EC2 instances...</p>
+      </div>
+    </div>
+    
+    <div class="dashboard-section">
+      <h2>ECS Clusters</h2>
+      <button class="refresh-btn" data-service="ecs">Refresh ECS</button>
+      <div id="ecs-clusters" class="service-container">
+        <p>Loading ECS clusters...</p>
+      </div>
+    </div>
+    
+    <div class="dashboard-section">
+      <h2>EKS Clusters</h2>
+      <button class="refresh-btn" data-service="eks">Refresh EKS</button>
+      <div id="eks-clusters" class="service-container">
+        <p>Loading EKS clusters...</p>
+      </div>
+    </div>
+    
+    <!-- 활동 모니터링 섹션 추가 -->
+    <div class="dashboard-section">
+      <h2>Activity Monitoring</h2>
+      <button class="refresh-btn" data-service="activity">Start Monitoring</button>
+      <div id="activity-monitor" class="monitor-container">
+        <div class="activity-status">
+          <div class="status-row">
+            <span class="status-label">Keyboard:</span>
+            <span id="keyboard-status" class="status-value inactive">Inactive</span>
+            <span id="keyboard-time" class="status-time"></span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Mouse Movement:</span>
+            <span id="mouse-movement-status" class="status-value inactive">Inactive</span>
+            <span id="mouse-movement-time" class="status-time"></span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Mouse Click:</span>
+            <span id="mouse-click-status" class="status-value inactive">Inactive</span>
+            <span id="mouse-click-time" class="status-time"></span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Screen Change:</span>
+            <span id="screen-status" class="status-value inactive">Inactive</span>
+            <span id="screen-time" class="status-time"></span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Audio:</span>
+            <span id="audio-status" class="status-value inactive">Inactive</span>
+            <span id="audio-time" class="status-time"></span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Active Window:</span>
+            <span id="active-window" class="status-value">Unknown</span>
+            <span id="window-time" class="status-time"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="dashboard-section">
+      <h2>Activity Log</h2>
+      <div id="activity-log" class="log-container">
+        <p>No activity yet</p>
+      </div>
+    </div>
+
+    <div class="connection-status">
+      <span id="connection-indicator" class="indicator disconnected"></span>
+      <span id="connection-text">Disconnected</span>
+    </div>
+  </div>
+  
+  <script src="dashboard.js"></script>
+  <script>
+    // Development specific code
+    document.addEventListener('DOMContentLoaded', function() {
+      // 연결 상태를 추적하기 위한 변수
+      let wsConnected = false;
+      let initialDataRequested = false;
+      
+      // 활동 모니터링 상태 변수
+      let lastKeyboardActivity = 0;
+      let lastMouseMovement = 0;
+      let lastMouseClick = 0;
+      let lastScreenChange = 0;
+      let lastAudioActivity = 0;
+      let activityTimers = {};
+      
+      // Initialize WebSocket connection
+      initWebSocket();
+      
+      function initWebSocket() {
+        // Connect to the WebSocket server
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}`;
+        
+        const ws = new WebSocket(wsUrl);
+        const connectionIndicator = document.getElementById('connection-indicator');
+        const connectionText = document.getElementById('connection-text');
+        
+        ws.onopen = () => {
+          console.log('Connected to WebSocket server');
+          wsConnected = true;
+          updateConnectionStatus('connected');
+          logActivity('Connected to WebSocket server');
+          
+          // 최초 연결 시에만 초기 데이터 요청
+          if (!initialDataRequested) {
+            initialDataRequested = true;
+            requestAllServices();
+          }
+        };
+        
+        ws.onclose = () => {
+          console.log('Disconnected from WebSocket server');
+          wsConnected = false;
+          initialDataRequested = false; // 재연결 시 다시 초기화
+          updateConnectionStatus('disconnected');
+          logActivity('Disconnected from WebSocket server');
+          
+          // Try to reconnect after a delay
+          setTimeout(initWebSocket, 3000);
+        };
+        
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          wsConnected = false;
+          updateConnectionStatus('error');
+          logActivity('WebSocket connection error');
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            console.log('Received message from server:', message);
+            
+            // 서버로부터 받은 모든 메시지를 Activity Log에 기록
+            logServerResponse(message);
+            
+            // Handle different message types
+            if (message.type === 'connection') {
+              updateConnectionStatus(message.status);
+              
+              // TCP 서버 연결 상태가 변경되었을 때만 데이터 요청
+              if (message.status === 'connected' && !initialDataRequested) {
+                initialDataRequested = true;
+                requestAllServices();
+              }
+            } else if (message.service === 'ec2' && message.instances) {
+              updateEc2Data(message.instances);
+            } else if (message.service === 'ecs' && message.clusters) {
+              updateEcsData(message.clusters);
+            } else if (message.service === 'eks' && message.clusters) {
+              updateEksData(message.clusters);
+            } else if (message.type === 'serviceData') {
+              updateServiceData(message.service, message.data);
+            } else if (message.type === 'error') {
+              logActivity(`Error: ${message.message}`);
+            } 
+            // 활동 모니터링 메시지 처리 - 새로 추가된 부분
+            else if (message.type === 'USER_ACTIVITY') {
+              handleActivityMessage(message);
+            }
+            
+          } catch (error) {
+            console.error('Error processing WebSocket message:', error);
+            logActivity(`Error processing message: ${error.message}`);
+          }
+        };
+        
+        // Handle refresh button clicks
+        document.querySelectorAll('.refresh-btn').forEach(button => {
+          button.addEventListener('click', () => {
+            const service = button.dataset.service;
+            if (service && ws.readyState === WebSocket.OPEN) {
+              if (service === 'activity') {
+                startActivityMonitoring();
+              } else {
+                sendRequest(service);
+              }
+            }
+          });
+        });
+
+        // 활동 모니터링 시작 요청
+        function startActivityMonitoring() {
+          if (!wsConnected) return;
+          
+          const request = {
+            action: 'startMonitoring'
+          };
+          ws.send(JSON.stringify(request));
+          logActivity('활동 모니터링 시작 요청 중...');
+        }
+        
+        function sendRequest(service) {
+          if (!wsConnected) return;
+          
+          const request = {
+            action: 'refresh',
+            service: service
+          };
+          ws.send(JSON.stringify(request));
+          logActivity(`요청: ${service.toUpperCase()} 데이터 조회 중...`);
+        }
+        
+        function requestAllServices() {
+          if (!wsConnected) return;
+          
+          const request = {
+            action: 'getAll'
+          };
+          ws.send(JSON.stringify(request));
+          logActivity('모든 AWS 서비스 데이터 요청 중...');
+        }
+        
+        // 활동 모니터링 메시지 처리 - 새로 추가된 함수
+        function handleActivityMessage(message) {
+          if (!message.content || typeof message.content !== 'object') {
+            console.warn('Invalid activity message format:', message);
+            return;
+          }
+          
+          const content = message.content;
+          const activityType = content.activity;
+          const timestamp = new Date().toLocaleTimeString();
+          
+          // 활동 유형별 처리
+          switch (activityType) {
+            case 'KEYBOARD_ACTIVITY':
+              updateActivityStatus('keyboard', '활성', timestamp);
+              break;
+              
+            case 'MOUSE_MOVEMENT':
+              updateActivityStatus('mouse-movement', '활성', timestamp);
+              break;
+              
+            case 'MOUSE_CLICK':
+              updateActivityStatus('mouse-click', '활성', timestamp);
+              break;
+              
+            case 'SCREEN_CHANGE':
+              updateActivityStatus('screen', '변화 감지', timestamp);
+              break;
+              
+            case 'AUDIO_PLAYBACK':
+              const volume = content.details && content.details.volume ? content.details.volume : 'N/A';
+              updateActivityStatus('audio', `재생 중 (볼륨: ${volume})`, timestamp);
+              break;
+              
+            case 'ACTIVE_WINDOW':
+              const windowName = content.details && content.details.window_name ? content.details.window_name : 'Unknown';
+              document.getElementById('active-window').textContent = windowName;
+              document.getElementById('window-time').textContent = timestamp;
+              break;
+              
+            default:
+              console.log('Unhandled activity type:', activityType);
+          }
+          
+          // 활동 로그 추가
+          logActivity(`활동 감지: ${getActivityName(activityType)}`);
+        }
+        
+        // 활동 이름 가져오기
+        function getActivityName(activityType) {
+          const activityNames = {
+            'KEYBOARD_ACTIVITY': '키보드 입력',
+            'MOUSE_MOVEMENT': '마우스 이동',
+            'MOUSE_CLICK': '마우스 클릭',
+            'SCREEN_CHANGE': '화면 변화',
+            'AUDIO_PLAYBACK': '오디오 재생',
+            'ACTIVE_WINDOW': '활성 창 변경'
+          };
+          
+          return activityNames[activityType] || activityType;
+        }
+        
+        // 활동 상태 업데이트
+        function updateActivityStatus(activityType, status, timestamp) {
+          const statusEl = document.getElementById(`${activityType}-status`);
+          const timeEl = document.getElementById(`${activityType}-time`);
+          
+          if (statusEl && timeEl) {
+            // 이전 타이머가 있으면 취소
+            if (activityTimers[activityType]) {
+              clearTimeout(activityTimers[activityType]);
+            }
+            
+            // 상태 및 시간 업데이트
+            statusEl.textContent = status;
+            statusEl.className = 'status-value active';
+            timeEl.textContent = timestamp;
+            
+            // 3초 후 비활성화 상태로 변경
+            activityTimers[activityType] = setTimeout(() => {
+              statusEl.textContent = 'Inactive';
+              statusEl.className = 'status-value inactive';
+            }, 3000);
+          }
+        }
+        
+        // 서버 응답에 따라 적절한 로그 메시지 생성
+        function logServerResponse(message) {
+          if (message.type === 'connection') {
+            const statusText = {
+              'connected': 'TCP 서버 연결됨',
+              'disconnected': 'TCP 서버 연결 끊김',
+              'error': 'TCP 서버 연결 오류'
+            }[message.status] || message.status;
+            
+            logActivity(`서버 상태: ${statusText}`);
+          } 
+          else if (message.service === 'ec2' && message.instances) {
+            logActivity(`응답: EC2 인스턴스 ${message.instances.length}개 수신됨`);
+          } 
+          else if (message.service === 'ecs' && message.clusters) {
+            logActivity(`응답: ECS 클러스터 ${message.clusters.length}개 수신됨`);
+          } 
+          else if (message.service === 'eks' && message.clusters) {
+            logActivity(`응답: EKS 클러스터 ${message.clusters.length}개 수신됨`);
+          } 
+          else if (message.type === 'serviceData') {
+            logActivity(`응답: ${message.service.toUpperCase()} 데이터 ${message.data.length}개 수신됨`);
+          }
+          else if (message.type === 'USER_ACTIVITY') {
+            // 활동 모니터링 메시지는 별도 처리
+            const activityType = message.content && message.content.activity;
+            if (activityType) {
+              logActivity(`활동 감지: ${getActivityName(activityType)}`);
+            }
+          }
+          else if (message.message) {
+            logActivity(`서버 메시지: ${message.message}`);
+          }
+          else {
+            // 모든 서버 응답을 로그로 기록 (JSON을 간략하게 표시)
+            const msgStr = JSON.stringify(message).substring(0, 100) + 
+                          (JSON.stringify(message).length > 100 ? '...' : '');
+            logActivity(`서버 응답: ${msgStr}`);
+          }
+        }
+        
+        function updateConnectionStatus(status) {
+          const connectionIndicator = document.getElementById('connection-indicator');
+          const connectionText = document.getElementById('connection-text');
+          connectionIndicator.classList.remove('connected', 'disconnected', 'error');
+          
+          switch (status) {
+            case 'connected':
+              connectionIndicator.classList.add('connected');
+              connectionText.textContent = 'Connected';
+              break;
+            case 'error':
+              connectionIndicator.classList.add('error');
+              connectionText.textContent = 'Connection Error';
+              break;
+            case 'disconnected':
+            default:
+              connectionIndicator.classList.add('disconnected');
+              connectionText.textContent = 'Disconnected';
+              break;
+          }
+        }
+        
+        function updateEc2Data(instances) {
+          const container = document.getElementById('ec2-instances');
+          renderDataTable(container, instances);
+        }
+        
+        function updateEcsData(clusters) {
+          const container = document.getElementById('ecs-clusters');
+          renderDataTable(container, clusters);
+        }
+        
+        function updateEksData(clusters) {
+          const container = document.getElementById('eks-clusters');
+          renderDataTable(container, clusters);
+        }
+        
+        function updateServiceData(service, data) {
+          const container = document.getElementById(`${service}-${service === 'ec2' ? 'instances' : 'clusters'}`);
+          if (container) {
+            renderDataTable(container, data);
+          }
+        }
+        
+        function renderDataTable(container, data) {
+          if (!container) {
+            console.error('Container not found');
+            return;
+          }
+          
+          if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = '<p>No data available</p>';
+            return;
+          }
+          
+          // Generate HTML table from data
+          let html = '<table class="data-table"><thead><tr>';
+          
+          // Get headers from the first item
+          const headers = Object.keys(data[0]);
+          headers.forEach(header => {
+            html += `<th>${header}</th>`;
+          });
+          
+          html += '</tr></thead><tbody>';
+          
+          // Generate rows
+          data.forEach(item => {
+            html += '<tr>';
+            headers.forEach(header => {
+              const value = item[header];
+              
+              // Apply styling for status fields
+              if (header === 'state' || header === 'status') {
+                const statusClass = value.toLowerCase();
+                html += `<td class="${statusClass}">${value}</td>`;
+              } else {
+                html += `<td>${value !== undefined ? value : ''}</td>`;
+              }
+            });
+            html += '</tr>';
+          });
+          
+          html += '</tbody></table>';
+          container.innerHTML = html;
+        }
+      }
+      
+      function logActivity(message) {
+        const logContainer = document.getElementById('activity-log');
+        if (!logContainer) return;
+        
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement('p');
+        logEntry.innerHTML = `<span class="timestamp">${timestamp}</span> ${message}`;
+        
+        logContainer.appendChild(logEntry);
+        
+        // Keep only the latest 20 entries
+        while (logContainer.children.length > 20) {
+          logContainer.removeChild(logContainer.firstChild);
+        }
+        
+        // Auto-scroll to bottom
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+    });
+  </script>
+  <style>
+    .connection-status {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(40, 40, 40, 0.8);
+      padding: 5px 10px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      color: white;
+      z-index: 100;
+    }
+    
+    .indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    
+    .connected {
+      background-color: #4caf50;
+    }
+    
+    .disconnected {
+      background-color: #f44336;
+    }
+    
+    .error {
+      background-color: #ff9800;
+    }
+    
+    .timestamp {
+      color: #999;
+      font-size: 0.8em;
+      margin-right: 5px;
+    }
+    
+    /* 활동 모니터링 스타일 */
+    .monitor-container {
+      background-color: #333;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+    }
+    
+    .activity-status {
+      display: grid;
+      grid-gap: 8px;
+    }
+    
+    .status-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 100px;
+      align-items: center;
+    }
+    
+    .status-label {
+      font-weight: bold;
+    }
+    
+    .status-value {
+      padding: 3px 8px;
+      border-radius: 3px;
+      text-align: center;
+    }
+    
+    .active {
+      background-color: #e6f7e6;
+      color: #28a745;
+    }
+    
+    .inactive {
+      background-color: #f8f9fa;
+      color: #6c757d;
+    }
+    
+    .status-time {
+      color: #666;
+      font-size: 0.85em;
+      text-align: right;
+    }
+  </style>
+</body>
+</html>

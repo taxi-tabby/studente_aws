@@ -1,0 +1,86 @@
+# Python 관련 파일
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 가상 환경
+venv/
+ENV/
+.env
+.venv/
+env/
+
+# PyCharm 관련
+.idea/
+.idea_modules/
+
+# VS Code 관련
+.vscode/
+*.code-workspace
+.history/
+
+# 로그 파일
+*.log
+logs/
+
+# AWS 자격 증명 관련
+.aws/
+credentials.json
+aws_config.json
+
+# 빌드 관련 파일
+*.exe
+*.spec
+*.manifest
+*.pyc
+
+# Node.js 관련 (프론트엔드)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.node_repl_history
+.yarn-integrity
+.next/
+out/
+
+# 기타 임시 파일
+.DS_Store
+Thumbs.db
+.tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# Windows 관련
+desktop.ini
+ehthumbs.db
+
+# macOS 관련
+._*
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes

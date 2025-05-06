@@ -1,0 +1,53 @@
+{
+  "name": "aws-dashboard",
+  "displayName": "AWS Dashboard",
+  "description": "Dashboard for AWS services monitoring",
+  "version": "0.1.0",
+  "publisher": "aws-study",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:aws-dashboard.openDashboard"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aws-dashboard.openDashboard",
+        "title": "Open AWS Dashboard"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "lint": "eslint src --ext ts",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "dev-server": "node ./out/devServer.js",
+    "dev": "concurrently \"npm run watch\" \"npm run dev-server\""
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/node": "^16.11.7",
+    "@typescript-eslint/eslint-plugin": "^5.30.0",
+    "@typescript-eslint/parser": "^5.30.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.18.0",
+    "typescript": "^4.7.4",
+    "vsce": "^2.15.0",
+    "@types/ws": "^8.5.5",
+    "@types/express": "^4.17.17",
+    "express": "^4.18.2",
+    "nodemon": "^3.0.1"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
+  }
+}
