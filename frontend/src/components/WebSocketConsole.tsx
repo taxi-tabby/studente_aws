@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { WebSocketMessage } from '../types/aws';
 import './WebSocketConsole.css';
+import { useTranslation } from 'react-i18next';
 
 interface WebSocketConsoleProps {
   messages: WebSocketMessage[];
@@ -37,6 +38,8 @@ const WebSocketConsole: React.FC<WebSocketConsoleProps> = ({
   messages,
   isConnected = true
 }) => {
+  const { t } = useTranslation();
+  
   // 최대 50개의 메시지만 표시하도록 제한
   const displayMessages = messages.slice(-50).reverse(); // 최근 메시지가 상단에 오도록 reverse
   
@@ -58,7 +61,7 @@ const WebSocketConsole: React.FC<WebSocketConsoleProps> = ({
         <div className="connection-status-overlay">
           <div className="connection-status-message">
             <span className="connection-status-icon">⚠️</span>
-            <span>연결이 끊어져 있습니다. 메시지를 수신할 수 없습니다.</span>
+            <span>{t('connection.cannotReceiveMessages')}</span>
           </div>
         </div>
       )}

@@ -221,34 +221,6 @@ body {
   min-height: 36px;
 }
 
-/* Add icons using pseudo-elements */
-.refresh-button::before {
-  content: "↻";
-  font-weight: bold;
-}
-
-.retry-button::before {
-  content: "⟳";
-  font-weight: bold;
-}
-
-.refresh-button {
-  background: linear-gradient(to bottom, #3498db, #2980b9);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.refresh-button:hover {
-  background: linear-gradient(to bottom, #3eb1ff, #3498db);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.refresh-button:active {
-  background: #2980b9;
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
 .retry-button {
   background: linear-gradient(to bottom, #2ecc71, #27ae60);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);

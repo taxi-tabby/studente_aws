@@ -1,6 +1,7 @@
 import React from 'react';
 import type { EC2Instance } from '../types/aws';
 import './AWSServices.css';
+import { useTranslation } from 'react-i18next';
 
 interface EC2InstancesProps {
   instances: EC2Instance[];
@@ -17,6 +18,8 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
   onStopInstance,
   isConnected = true // 기본값은 연결된 상태
 }) => {
+  const { t } = useTranslation();
+  
   const handleStartInstance = (instanceId: string) => {
     if (onStartInstance && isConnected) {
       onStartInstance(instanceId);
@@ -33,27 +36,27 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
     <div className={`dashboard-section ${!isConnected ? 'disconnected' : ''}`}>
       <div className="section-header">
         <h2>
-          EC2 Instances
-          {!isConnected && <span className="connection-warning">(연결 끊김)</span>}
+          EC2 {t('aws.instances')}
+          {!isConnected && <span className="connection-warning">({t('connection.disconnected')})</span>}
         </h2>
         <button 
           className="refresh-button" 
           onClick={onRefresh}
           disabled={!isConnected}
         >
-          <span className="refresh-icon">🔄</span> Refresh
+          {t('buttons.refresh')}
         </button>
       </div>
       {instances.length > 0 ? (
         <table className="aws-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>ID</th>
-              <th>State</th>
-              <th>Type</th>
-              <th>Availability Zone</th>
-              <th>Actions</th>
+              <th>{t('table.name')}</th>
+              <th>{t('table.id')}</th>
+              <th>{t('table.state')}</th>
+              <th>{t('table.type')}</th>
+              <th>{t('table.zone')}</th>
+              <th>{t('table.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -75,18 +78,18 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
                         <button 
                           className="start-button"
                           onClick={() => handleStartInstance(instance.id)}
-                          title="Start Instance"
+                          title={t('buttons.start')}
                         >
-                          <span role="img" aria-label="Start">▶️ Start</span>
+                          <span role="img" aria-label="Start">▶️ {t('buttons.start')}</span>
                         </button>
                       )}
                       {instance.state === 'running' && (
                         <button 
                           className="stop-button"
                           onClick={() => handleStopInstance(instance.id)}
-                          title="Stop Instance"
+                          title={t('buttons.stop')}
                         >
-                          <span role="img" aria-label="Stop">⏹️ Stop</span>
+                          <span role="img" aria-label="Stop">⏹️ {t('buttons.stop')}</span>
                         </button>
                       )}
                       {instance.state !== 'running' && instance.state !== 'stopped' && (
@@ -96,7 +99,7 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
                       )}
                     </>
                   ) : (
-                    <span className="status-disabled">사용 불가</span>
+                    <span className="status-disabled">{t('table.notAvailable')}</span>
                   )}
                 </td>
               </tr>
@@ -105,7 +108,7 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
         </table>
       ) : (
         <p className={!isConnected ? 'text-disconnected' : ''}>
-          {isConnected ? 'No EC2 instances available' : '연결이 끊어져 데이터를 표시할 수 없습니다.'}
+          {isConnected ? t('aws.noInstances') : t('connection.cannotReceiveMessages')}
         </p>
       )}
     </div>

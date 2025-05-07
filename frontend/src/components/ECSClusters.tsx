@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ECSCluster } from '../types/aws';
 import './AWSServices.css';
+import { useTranslation } from 'react-i18next';
 
 interface ECSClustersProps {
   clusters: ECSCluster[];
@@ -13,28 +14,30 @@ const ECSClusters: React.FC<ECSClustersProps> = ({
   onRefresh,
   isConnected = true // 기본값은 연결된 상태
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className={`dashboard-section ${!isConnected ? 'disconnected' : ''}`}>
       <div className="section-header">
         <h2>
-          ECS Clusters
-          {!isConnected && <span className="connection-warning">(연결 끊김)</span>}
+          ECS {t('aws.clusters')}
+          {!isConnected && <span className="connection-warning">({t('connection.disconnected')})</span>}
         </h2>
         <button 
           className="refresh-button" 
           onClick={onRefresh}
           disabled={!isConnected}
         >
-          <span className="refresh-icon">🔄</span> Refresh
+          {t('buttons.refresh')}
         </button>
       </div>
       {clusters.length > 0 ? (
         <table className="aws-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Services</th>
+              <th>{t('table.name')}</th>
+              <th>{t('table.state')}</th>
+              <th>{t('aws.services')}</th>
               <th>Task Count</th>
               <th>Region</th>
             </tr>
@@ -57,7 +60,7 @@ const ECSClusters: React.FC<ECSClustersProps> = ({
         </table>
       ) : (
         <p className={!isConnected ? 'text-disconnected' : ''}>
-          {isConnected ? 'No ECS clusters available' : '연결이 끊어져 데이터를 표시할 수 없습니다.'}
+          {isConnected ? t('aws.noClusters') : t('connection.cannotReceiveMessages')}
         </p>
       )}
     </div>

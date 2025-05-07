@@ -8,6 +8,7 @@ import EKSClusters from './components/EKSClusters'
 import WebSocketConsole from './components/WebSocketConsole'
 import Timer from './components/Timer'
 import type { EC2Instance, ECSCluster, EKSCluster, ActivityStatus, WebSocketMessage } from './types/aws'
+import { useTranslation } from 'react-i18next'
 
 // 타이머 최대값 기본값 (30분 = 30 * 60 * 1000 밀리초)
 // WebSocket으로부터 maxtime이 전달되면 이 값을 대체함
@@ -15,12 +16,25 @@ const DEFAULT_MAX_TIMER_VALUE = 30 * 60 * 1000;
 
 // 지원하는 언어 목록
 const SUPPORTED_LANGUAGES = [
-  { code: 'ko', name: '한국어' },
   { code: 'en', name: 'English' },
-  { code: 'ja', name: '日本語' }
+  { code: 'ko', name: '한국어' },
+  { code: 'ja', name: '日本語' },
+  { code: 'zh', name: '中文' }
 ];
 
+// 브라우저 언어 감지 함수
+const detectBrowserLanguage = (): string => {
+  const browserLang = navigator.language.split('-')[0]; // 'ko-KR' -> 'ko'
+  const supportedLangCodes = SUPPORTED_LANGUAGES.map(lang => lang.code);
+  
+  // 지원하는 언어인지 확인하고, 지원하는 언어면 해당 언어 반환, 아니면 영어 반환
+  return supportedLangCodes.includes(browserLang) ? browserLang : 'en';
+};
+
 function App() {
+	// Initialize i18n hooks
+	const { t, i18n } = useTranslation();
+
 	// State for data received from WebSocket
 	const [activityStatus, setActivityStatus] = useState<ActivityStatus>({
 		keyboard: false,
@@ -33,7 +47,7 @@ function App() {
 	const [ec2Instances, setEC2Instances] = useState<EC2Instance[]>([]);
 	const [ecsClusters, setECSClusters] = useState<ECSCluster[]>([]);
 	const [eksClusters, setEKSClusters] = useState<EKSCluster[]>([]);
-	const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
+	const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
 	const [socketMessages, setSocketMessages] = useState<WebSocketMessage[]>([]);
 	const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
 	
@@ -43,7 +57,7 @@ function App() {
 	const [isUserActive, setIsUserActive] = useState<boolean>(false);
 	
 	// 언어 설정 상태 추가
-	const [currentLanguage, setCurrentLanguage] = useState<string>('ko');
+	const [currentLanguage, setCurrentLanguage] = useState<string>('en');
 	
 	// 모바일 메뉴 토글 상태
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
@@ -56,6 +70,13 @@ function App() {
 
 	// Maximum number of socket messages to store
 	const MAX_MESSAGES = 500;
+
+	// Change language handler
+	const handleLanguageChange = (lang: string) => {
+		setCurrentLanguage(lang);
+		i18n.changeLanguage(lang);
+		localStorage.setItem('language', lang);
+	};
 
 	// 빈 샘플 데이터 설정
 	const loadMockData = () => {
@@ -83,6 +104,11 @@ function App() {
 	};
 
 	useEffect(() => {
+		// Initialize language from localStorage or detect browser language
+		const savedLanguage = localStorage.getItem('language') || detectBrowserLanguage();
+		setCurrentLanguage(savedLanguage);
+		i18n.changeLanguage(savedLanguage);
+
 		// 초기 화면 표시를 위해 즉시 샘플 데이터 로드
 		loadMockData();
 		
@@ -95,7 +121,7 @@ function App() {
 		
 		// 연결 끊김 콜백 설정
 		webSocketClient.setDisconnectCallback(() => {
-			setConnectionStatus('Disconnected');
+			setConnectionStatus('disconnected');
 			// 연결이 끊어지면 데이터 초기화
 			loadMockData();
 		});
@@ -105,13 +131,13 @@ function App() {
 		
 		// Connect to the WebSocket server
 		webSocketClient.connect();
-		setConnectionStatus('Connecting...');
+		setConnectionStatus('connecting');
 
 		// WebSocket 연결 상태 주기적 체크
 		const connectionCheck = setInterval(() => {
 			// getConnectionStatus 메서드를 통해 연결 상태 확인
 			if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-				setConnectionStatus('Connected');
+				setConnectionStatus('connected');
 				clearInterval(connectionCheck);
 			}
 		}, 1000);
@@ -138,12 +164,17 @@ function App() {
 			clearInterval(connectionCheck);
 			clearInterval(requestDataInterval);
 		};
-	}, []);
+	}, [i18n]);
+
+	// Save language preference to localStorage when it changes
+	useEffect(() => {
+		localStorage.setItem('language', currentLanguage);
+	}, [currentLanguage]);
 
 	// Handle messages received from WebSocket
 	const handleWebSocketMessage = (message: WebSocketMessage) => {
 		console.log("WebSocket 메시지 수신:", message);
-		setConnectionStatus('Connected');
+		setConnectionStatus('connected');
 		
 		// Add the message to the console messages
 		setSocketMessages(prevMessages => {
@@ -300,7 +331,7 @@ function App() {
 	// Try to reconnect WebSocket
 	const handleReconnect = () => {
 		if (webSocketClientRef.current) {
-			setConnectionStatus('Connecting...');
+			setConnectionStatus('connecting');
 			webSocketClientRef.current.connect();
 			
 			// 연결 후 데이터 요청
@@ -534,26 +565,26 @@ function App() {
 					<div className={`header-controls ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
 						<div className="header-actions">
 							<button className="refresh-button" onClick={handleRefreshData}>
-								새로고침
+								{t('buttons.refresh')}
 							</button>
 							
-							<div className={`connection-status ${connectionStatus.toLowerCase().replace('...', '')}`}>
-								{connectionStatus}
+							<div className={`connection-status ${connectionStatus}`}>
+								{t(`connection.${connectionStatus}`)}
 							</div>
 							
-							{connectionStatus === 'Disconnected' && (
+							{connectionStatus === 'disconnected' && (
 								<button className="retry-button" onClick={handleReconnect}>
-									재연결
+									{t('buttons.retry')}
 								</button>
 							)}
 						</div>
 						
 						{/* 언어 선택 드롭다운 */}
 						<div className="language-selector">
-							<span className="language-label">언어 변경</span>
+							<span className="language-label">{t('header.language')}</span>
 							<select 
 								value={currentLanguage} 
-								onChange={(e) => setCurrentLanguage(e.target.value)}
+								onChange={(e) => handleLanguageChange(e.target.value)}
 								className="language-dropdown"
 							>
 								{SUPPORTED_LANGUAGES.map(lang => (
@@ -567,10 +598,10 @@ function App() {
 						{/* About/License 페이지 링크 */}
 						<div className="page-links">
 							<button className="about-button" onClick={() => console.log("About page")}>
-								About
+								{t('header.about')}
 							</button>
 							<button className="license-button" onClick={() => console.log("License page")}>
-								License
+								{t('header.license')}
 							</button>
 						</div>
 					</div>
@@ -580,14 +611,14 @@ function App() {
 					{/* 모든 컴포넌트에 연결 상태 전달 */}
 					<ActivityMonitor 
 						activityStatus={activityStatus} 
-						isConnected={connectionStatus === 'Connected'} 
+						isConnected={connectionStatus === 'connected'} 
 					/>
 					
 					<Timer 
 						value={timerValue} 
 						maxValue={maxTimerValue} // maxTimerValue 상태 값 사용 
 						isActive={isUserActive || activityStatus.keyboard || activityStatus.mouseMovement || activityStatus.mouseClick || activityStatus.audio}
-						isConnected={connectionStatus === 'Connected'} 
+						isConnected={connectionStatus === 'connected'} 
 					/>
 
 					<div className="aws-services">
@@ -596,17 +627,17 @@ function App() {
 							onRefresh={handleRefreshEC2} 
 							onStartInstance={handleStartEC2Instance}
 							onStopInstance={handleStopEC2Instance}
-							isConnected={connectionStatus === 'Connected'}
+							isConnected={connectionStatus === 'connected'}
 						/>
 						<ECSClusters 
 							clusters={ecsClusters} 
 							onRefresh={handleRefreshECS}
-							isConnected={connectionStatus === 'Connected'} 
+							isConnected={connectionStatus === 'connected'} 
 						/>
 						<EKSClusters 
 							clusters={eksClusters} 
 							onRefresh={handleRefreshEKS}
-							isConnected={connectionStatus === 'Connected'} 
+							isConnected={connectionStatus === 'connected'} 
 						/>
 					</div>
 					
@@ -614,12 +645,12 @@ function App() {
 						<div className="console-header">
 							<h2>Messages</h2>
 							<button className="clear-console-button" onClick={clearSocketMessages}>
-								Clear Console
+								{t('buttons.clearConsole')}
 							</button>
 						</div>
 						<WebSocketConsole 
 							messages={socketMessages}
-							isConnected={connectionStatus === 'Connected'} 
+							isConnected={connectionStatus === 'connected'} 
 						/>
 					</div>
 				</main>
