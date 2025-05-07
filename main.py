@@ -130,7 +130,8 @@ def main():
 
     # 전역 타이머    
     t = timer.ServiceTimer()
-    t.set_duration(1000 * 60 * 30)  # 30분
+    # t.set_duration(1000 * 60 * 30)  # 30분
+    t.set_duration(1000 * 60 * 1) # 1분
     t.set_tick_interval(1000)   # 1초
 
     t.on_start(t_start)

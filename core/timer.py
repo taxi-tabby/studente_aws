@@ -149,3 +149,8 @@ class ServiceTimer:
         
         remaining_seconds = max(0, self._end_time - time.time())
         return int(remaining_seconds * 1000)
+    
+    
+    def is_running(self):
+        """Return whether the timer is currently running"""
+        return self._running

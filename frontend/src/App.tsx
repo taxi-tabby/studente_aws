@@ -9,8 +9,9 @@ import WebSocketConsole from './components/WebSocketConsole'
 import Timer from './components/Timer'
 import type { EC2Instance, ECSCluster, EKSCluster, ActivityStatus, WebSocketMessage } from './types/aws'
 
-// 타이머 최대값 (30분 = 30 * 60 * 1000 밀리초)
-const MAX_TIMER_VALUE = 30 * 60 * 1000;
+// 타이머 최대값 기본값 (30분 = 30 * 60 * 1000 밀리초)
+// WebSocket으로부터 maxtime이 전달되면 이 값을 대체함
+const DEFAULT_MAX_TIMER_VALUE = 30 * 60 * 1000;
 
 function App() {
 	// State for data received from WebSocket
@@ -31,6 +32,7 @@ function App() {
 	
 	// 타이머 상태 추가 - 서버에서 전송하는 값을 사용
 	const [timerValue, setTimerValue] = useState<number>(0);
+	const [maxTimerValue, setMaxTimerValue] = useState<number>(DEFAULT_MAX_TIMER_VALUE); // 동적으로 설정될 수 있는 최대 타이머 값
 	const [isUserActive, setIsUserActive] = useState<boolean>(false);
 
 	// Reference to WebSocketClient instance
@@ -165,6 +167,10 @@ function App() {
 			 // TIMER_TICK 처리
 			if (activityType === "TIMER_TICK" && message.content?.nowtime) {
 				setTimerValue(message.content.nowtime);
+				// maxtime이 제공되면 타이머 최대값 업데이트
+				if (message.content?.maxtime) {
+					setMaxTimerValue(message.content.maxtime);
+				}
 				return;
 			}
 			
@@ -521,7 +527,7 @@ function App() {
 					
 					<Timer 
 						value={timerValue} 
-						maxValue={MAX_TIMER_VALUE} 
+						maxValue={maxTimerValue} // maxTimerValue 상태 값 사용 
 						isActive={isUserActive || activityStatus.keyboard || activityStatus.mouseMovement || activityStatus.mouseClick || activityStatus.audio}
 						isConnected={connectionStatus === 'Connected'} 
 					/>

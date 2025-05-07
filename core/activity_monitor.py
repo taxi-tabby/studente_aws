@@ -63,6 +63,16 @@ _monitoring_active = False
 _monitoring_threads = []
 _lock_socket = None  # 소켓 참조 저장용
 
+
+
+# 타이머 리셋
+def timer_reset():
+    t = timer.ServiceTimer()
+    t.reset_progress()
+    if not t.is_running():
+        t.start()
+
+
 def set_process_name():
     """프로세스 이름을 설정합니다."""
     try:
@@ -125,8 +135,7 @@ def monitor_keyboard():
         if (current_time - _last_keyboard_event) > debounce_ms:
             logger.debug(f"키보드 이벤트 감지: {key} - 메시지 전송 시도")
             
-            # 타이머 리셋
-            timer.ServiceTimer().reset_progress()
+            timer_reset()
             
             result = message_format.send_keyboard_activity()
             if result:
@@ -170,9 +179,8 @@ def monitor_mouse():
         if (current_time - _last_mouse_movement) > movement_debounce_ms:
             logger.debug(f"마우스 이동 감지: ({x},{y}) - 메시지 전송 시도")
             
-            # 타이머 리셋
-            timer.ServiceTimer().reset_progress()
-            
+
+            timer_reset()
             result = message_format.send_mouse_movement()
             if result:
                 logger.debug("마우스 이동 메시지 전송 성공")
@@ -191,9 +199,7 @@ def monitor_mouse():
         if pressed and (current_time - _last_mouse_click) > click_debounce_ms:
             logger.debug(f"마우스 클릭 감지: ({x},{y}, {button}) - 메시지 전송 시도")
             
-            # 타이머 리셋
-            timer.ServiceTimer().reset_progress()
-            
+            timer_reset()
             result = message_format.send_mouse_click()
             if result:
                 logger.debug("마우스 클릭 메시지 전송 성공")
@@ -258,9 +264,7 @@ def monitor_screen_changes():
                 if similarity < threshold:
                     logger.debug(f"화면 변화 감지 (유사성: {similarity:.4f}) - 메시지 전송 시도")
                     
-                    # 타이머 리셋
-                    timer.ServiceTimer().reset_progress()
-            
+                    timer_reset()
                     result = message_format.send_screen_change()
                     if result:
                         logger.debug("화면 변화 메시지 전송 성공")
@@ -347,9 +351,7 @@ def monitor_audio():
                 if volume > threshold:
                     logger.debug(f"오디오 재생 감지 (볼륨: {volume}) - 메시지 전송 시도")
                     
-                    # 타이머 리셋
-                    timer.ServiceTimer().reset_progress()
-                    
+                    timer_reset()
                     result = message_format.send_audio_playback(int(volume))
                     if result:
                         logger.debug("오디오 재생 메시지 전송 성공")
