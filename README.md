@@ -26,6 +26,22 @@ AWS Monitoring System is a comprehensive tool for real-time monitoring and manag
   - Interactive resource management interface
   - Custom filter and search capabilities
 
+## Usage Guide
+
+### System Requirements
+- Currently supports Windows operating systems only
+- Internet connection for accessing the dashboard
+
+### How to Use
+1. Run the application by double-clicking `dist/main.exe`
+2. Access the dashboard at [https://taxi-tabby.github.io/studente_aws/](https://taxi-tabby.github.io/studente_aws/)
+3. The dashboard will automatically connect to the running application
+4. Start monitoring your AWS resources and local system activity
+
+### Note
+- A VS Code Extension is planned for future releases
+- The backend service must be running (main.exe) for the dashboard to display data
+
 ## Getting Started
 
 ### Prerequisites
@@ -92,6 +108,22 @@ AWS 모니터링 시스템은 AWS 리소스를 실시간으로 모니터링하�
   - 대화형 리소스 관리 인터페이스
   - 사용자 정의 필터 및 검색 기능
 
+## 사용 가이드
+
+### 시스템 요구사항
+- 현재 Windows 운영체제만 지원됨
+- 대시보드 접근을 위한 인터넷 연결 필요
+
+### 사용 방법
+1. `dist/main.exe` 파일을 더블클릭하여 애플리케이션 실행
+2. [https://taxi-tabby.github.io/studente_aws/](https://taxi-tabby.github.io/studente_aws/) 에서 대시보드 접속
+3. 대시보드가 실행 중인 애플리케이션에 자동으로 연결됨
+4. AWS 리소스 및 로컬 시스템 활동 모니터링 시작
+
+### 참고사항
+- VS Code 확장 프로그램은 향후 출시 예정
+- 대시보드에 데이터가 표시되려면 백엔드 서비스(main.exe)가 실행 중이어야 함
+
 ## 시작하기
 
 ### 필수 조건
@@ -146,6 +178,22 @@ AWS監視システムは、AWSリソースをリアルタイムで監視およ�
   - インタラクティブなリソース管理インターフェース
   - カスタムフィルターと検索機能
 
+## 使用ガイド
+
+### システム要件
+- 現在はWindowsオペレーティングシステムのみをサポート
+- ダッシュボードへのアクセスにはインターネット接続が必要
+
+### 使用方法
+1. `dist/main.exe`をダブルクリックしてアプリケーションを実行
+2. [https://taxi-tabby.github.io/studente_aws/](https://taxi-tabby.github.io/studente_aws/)でダッシュボードにアクセス
+3. ダッシュボードは実行中のアプリケーションに自動的に接続
+4. AWSリソースとローカルシステムのアクティビティの監視を開始
+
+### 注意
+- VS Code拡張機能は今後リリース予定
+- ダッシュボードにデータを表示するには、バックエンドサービス(main.exe)が実行されている必要があります
+
 ## 始め方
 
 ### 前提条件
@@ -199,6 +247,22 @@ AWS监控系统是一个全面的工具，用于实时监控和管理AWS资源�
   - 基于WebSocket的实时更新
   - 交互式资源管理界面
   - 自定义筛选和搜索功能
+
+## 使用指南
+
+### 系统要求
+- 目前仅支持Windows操作系统
+- 访问仪表板需要互联网连接
+
+### 使用方法
+1. 双击`dist/main.exe`运行应用程序
+2. 在[https://taxi-tabby.github.io/studente_aws/](https://taxi-tabby.github.io/studente_aws/)访问仪表板
+3. 仪表板将自动连接到正在运行的应用程序
+4. 开始监控您的AWS资源和本地系统活动
+
+### 注意
+- 计划在未来版本中提供VS Code扩展
+- 仪表板显示数据需要后端服务(main.exe)正在运行
 
 ## 开始使用
 
