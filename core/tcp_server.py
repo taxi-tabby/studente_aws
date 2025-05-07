@@ -218,7 +218,15 @@ async def process_ws_message(data):
         logger.info(f"WebSocket 액션 처리: {action}")
         
         # 활동 모니터링 시작 명령 처리
-        if action == "startMonitoring":
+        if action == "test":
+            logger.info("테스트 요청 수신")
+            await broadcast_to_ws_clients({
+                "service": "test",
+                "status": "success",
+                "message": "테스트 메시지입니다."
+            })
+            return {"status": "success", "message": "테스트 메시지가 전송되었습니다."}
+        elif action == "startMonitoring":
             logger.info("활동 모니터링 시작 요청 수신")
             activity_response = {
                 "service": "activity",
