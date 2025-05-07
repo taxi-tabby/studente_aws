@@ -602,8 +602,7 @@ def find_and_kill_lock_process():
                 except Exception as e:
                     logger.error(f"포트 강제 해제 중 오류: {e}")
                     return False
-            
-            return success
+
                 
         except subprocess.CalledProcessError:
             logger.info(f"포트 {LOCK_PORT}를 사용 중인 프로세스가 없습니다.")

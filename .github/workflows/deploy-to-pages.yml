@@ -38,9 +38,6 @@ jobs:
       - name: Build
         working-directory: ./frontend
         run: npm run build
-        env:
-          # Ensure Vite uses the correct base path
-          VITE_BASE_PATH: /studente_aws/
       
       - name: Configure GitHub Pages
         run: |

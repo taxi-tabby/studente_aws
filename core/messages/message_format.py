@@ -55,6 +55,9 @@ class MessageType:
     AUDIO_PLAYBACK = "AUDIO_PLAYBACK"
     USER_ACTIVITY = "USER_ACTIVITY"
     SYSTEM_STATUS = "SYSTEM_STATUS"
+    TIMER_START= "TIMER_START"
+    TIMER_TICK = "TIMER_TICK"
+    TIMER_END = "TIMER_END"
     
     # AWS 서비스 관련
     AWS_EC2_LIST = "AWS_EC2_LIST"
@@ -356,6 +359,23 @@ def send_activity_message(activity_type, details=None):
     return queue_message(message, activity_type)
 
 # 특정 활동 유형에 대한 편의 함수들
+
+def send_timer_start():
+    """타이머 시작 메세지를 전송합니다다."""
+    logger.info("타이머 시작 메시지 큐에 추가")
+    return send_activity_message(MessageType.TIMER_START)
+
+def send_timer_tick(nowtime=None):
+    """타이머 진행마다 메세지를 전송합니다"""
+    logger.info("타이머 시작 메시지 큐에 추가")
+    return send_activity_message(MessageType.TIMER_TICK, {"nowtime": nowtime})
+
+def send_timer_end():
+    """타이머 종료 시 메세지를 전송합니다"""
+    logger.info("타이머 시작 메시지 큐에 추가")
+    return send_activity_message(MessageType.TIMER_END)
+
+
 def send_keyboard_activity():
     """키보드 활동 메시지를 전송합니다."""
     logger.info("키보드 활동 메시지 큐에 추가")

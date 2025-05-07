@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import messagebox
 import threading
 
+
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
@@ -24,6 +25,9 @@ from core import activity_monitor
 from core import tcp_server
 from core.aws_auth import aws_auth
 from core.config.config_loader import config
+from core import timer
+from core.messages import message_format
+
 
 def start_activity_monitoring_async():
     """활동 모니터링을 별도 스레드에서 시작합니다."""
@@ -44,10 +48,30 @@ def start_activity_monitoring_async():
     logger.error("활동 모니터링을 시작할 수 없습니다. 최대 재시도 횟수를 초과했습니다.")
     return False
 
+def t_start():
+    """타이머 시작 시 호출되는 콜백 함수"""
+    logger.info("타이머가 시작되었습니다.")
+    message_format.send_timer_start()
+
+def t_tick():
+    """타이머 틱 시 호출되는 콜백 함수"""
+    logger.info("타이머 틱 발생")
+    t = timer.ServiceTimer()
+    message_format.send_timer_tick(t.get_remaining_ms())
+
+def t_end():
+    """타이머 종료 시 호출되는 콜백 함수"""
+    logger.info("타이머가 종료되었습니다.")
+    message_format.send_timer_end()
+
+
+
+
 def main():
     """애플리케이션의 메인 함수"""
     logger.info("AWS 서비스 관리 및 사용자 활동 모니터링 애플리케이션을 시작합니다...")
-    
+
+
     # 중복 실행 체크는 모니터링 시작시 처리하도록 변경
     # if activity_monitor.is_already_running():
     #     # GUI로 중복 실행 메시지 표시
@@ -101,6 +125,18 @@ def main():
             loop.close()
             logger.info("이벤트 루프가 종료되었습니다.")
     
+
+    
+
+    # 전역 타이머    
+    t = timer.ServiceTimer()
+    t.set_duration(1000 * 60 * 30)  # 30분
+    t.set_tick_interval(1000)   # 1초
+
+    t.on_start(t_start)
+    t.on_tick(t_tick)
+    t.on_end(t_end)
+
     # WebSocket 서버 시작 (별도 스레드에서)
     ws_thread = threading.Thread(target=initialize_event_loop_and_websocket)
     ws_thread.daemon = True
@@ -116,6 +152,9 @@ def main():
     activity_thread = threading.Thread(target=start_activity_monitoring_async)
     activity_thread.daemon = True
     activity_thread.start()
+
+    t.start()  # 타이머 시작
+    logger.info("타이머가 시작되었습니다.")
     
     # 프로그램이 계속 실행되도록 유지
     logger.info("모든 서비스가 시작되었습니다. 프로그램을 종료하려면 Ctrl+C를 누르세요.")
