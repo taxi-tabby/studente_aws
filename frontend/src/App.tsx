@@ -7,6 +7,8 @@ import ECSClusters from './components/ECSClusters'
 import EKSClusters from './components/EKSClusters'
 import WebSocketConsole from './components/WebSocketConsole'
 import Timer from './components/Timer'
+import AboutModal from './components/AboutModal'
+import LicenseModal from './components/LicenseModal'
 import type { EC2Instance, ECSCluster, EKSCluster, ActivityStatus, WebSocketMessage } from './types/aws'
 import { useTranslation } from 'react-i18next'
 
@@ -51,6 +53,10 @@ function App() {
 	const [socketMessages, setSocketMessages] = useState<WebSocketMessage[]>([]);
 	const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
 	
+	// Modal visibility states
+	const [isAboutModalOpen, setIsAboutModalOpen] = useState<boolean>(false);
+	const [isLicenseModalOpen, setIsLicenseModalOpen] = useState<boolean>(false);
+	
 	// 타이머 상태 추가 - 서버에서 전송하는 값을 사용
 	const [timerValue, setTimerValue] = useState<number>(0);
 	const [maxTimerValue, setMaxTimerValue] = useState<number>(DEFAULT_MAX_TIMER_VALUE); // 동적으로 설정될 수 있는 최대 타이머 값
@@ -76,6 +82,27 @@ function App() {
 		setCurrentLanguage(lang);
 		i18n.changeLanguage(lang);
 		localStorage.setItem('language', lang);
+	};
+
+	// Modal handlers
+	const openAboutModal = () => {
+		setIsAboutModalOpen(true);
+		// Close mobile menu if open
+		if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+	};
+
+	const closeAboutModal = () => {
+		setIsAboutModalOpen(false);
+	};
+
+	const openLicenseModal = () => {
+		setIsLicenseModalOpen(true);
+		// Close mobile menu if open
+		if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+	};
+
+	const closeLicenseModal = () => {
+		setIsLicenseModalOpen(false);
 	};
 
 	// 빈 샘플 데이터 설정
@@ -595,12 +622,12 @@ function App() {
 							</select>
 						</div>
 						
-						{/* About/License 페이지 링크 */}
+						{/* About/License 페이지 링크 - Connect to modal functions */}
 						<div className="page-links">
-							<button className="about-button" onClick={() => console.log("About page")}>
+							<button className="about-button" onClick={openAboutModal}>
 								{t('header.about')}
 							</button>
-							<button className="license-button" onClick={() => console.log("License page")}>
+							<button className="license-button" onClick={openLicenseModal}>
 								{t('header.license')}
 							</button>
 						</div>
@@ -659,6 +686,17 @@ function App() {
 					<p>Studente AWS &copy; {new Date().getFullYear()} by <i>rkdmf0000@gmail.com</i></p>
 				</footer>
 			</div>
+
+			{/* Render modal components */}
+			<AboutModal 
+				isOpen={isAboutModalOpen}
+				onClose={closeAboutModal}
+			/>
+			
+			<LicenseModal
+				isOpen={isLicenseModalOpen}
+				onClose={closeLicenseModal} 
+			/>
 		</>
 	)
 }
