@@ -38,6 +38,9 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         
         <h4>Version</h4>
         <p>1.0.0</p>
+
+        <h4>만든 넘</h4>
+        <p>아직 까진 나 혼자 단독 개발</p>
         
         <div className="tracker-download">
           <h4>Studente AWS Tracker</h4>

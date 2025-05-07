@@ -15,7 +15,10 @@ const enTranslations = {
     retry: 'Retry',
     clearConsole: 'Clear Console',
     start: 'Start',
-    stop: 'Stop'
+    stop: 'Stop',
+    test: 'Test',
+    reset: 'Reset',
+    submit: 'Submit'
   },
   header: {
     language: 'Language',
@@ -53,6 +56,19 @@ const enTranslations = {
     hours: 'hours',
     minutes: 'minutes',
     seconds: 'seconds'
+  },
+  interface: {
+    title: 'Control Panel',
+    textInput: 'Text Input',
+    enterText: 'Enter text here...',
+    dropdown: 'Dropdown',
+    option: 'Option',
+    slider: 'Slider',
+    checkbox: 'Enable feature',
+    radioGroup: 'Select an option',
+    action1: 'Action 1',
+    action2: 'Action 2',
+    action3: 'Action 3'
   }
 };
 
@@ -70,7 +86,10 @@ const koTranslations = {
     retry: '재시도',
     clearConsole: '콘솔 지우기',
     start: '시작',
-    stop: '중지'
+    stop: '중지',
+    test: '테스트',
+    reset: '초기화',
+    submit: '제출'
   },
   header: {
     language: '언어',
@@ -108,6 +127,19 @@ const koTranslations = {
     hours: '시간',
     minutes: '분',
     seconds: '초'
+  },
+  interface: {
+    title: '제어판',
+    textInput: '텍스트 입력',
+    enterText: '여기에 텍스트 입력...',
+    dropdown: '드롭다운',
+    option: '옵션',
+    slider: '슬라이더',
+    checkbox: '기능 활성화',
+    radioGroup: '옵션 선택',
+    action1: '작업 1',
+    action2: '작업 2',
+    action3: '작업 3'
   }
 };
 
@@ -125,7 +157,10 @@ const jaTranslations = {
     retry: '再試行',
     clearConsole: 'コンソールをクリア',
     start: '開始',
-    stop: '停止'
+    stop: '停止',
+    test: 'テスト',
+    reset: 'リセット',
+    submit: '送信'
   },
   header: {
     language: '言語',
@@ -163,6 +198,19 @@ const jaTranslations = {
     hours: '時間',
     minutes: '分',
     seconds: '秒'
+  },
+  interface: {
+    title: 'コントロールパネル',
+    textInput: 'テキスト入力',
+    enterText: 'ここにテキストを入力...',
+    dropdown: 'ドロップダウン',
+    option: 'オプション',
+    slider: 'スライダー',
+    checkbox: '機能を有効にする',
+    radioGroup: 'オプションを選択',
+    action1: 'アクション 1',
+    action2: 'アクション 2',
+    action3: 'アクション 3'
   }
 };
 
@@ -180,7 +228,10 @@ const zhTranslations = {
     retry: '重试',
     clearConsole: '清除控制台',
     start: '启动',
-    stop: '停止'
+    stop: '停止',
+    test: '测试',
+    reset: '重置',
+    submit: '提交'
   },
   header: {
     language: '语言',
@@ -218,6 +269,19 @@ const zhTranslations = {
     hours: '小时',
     minutes: '分钟',
     seconds: '秒'
+  },
+  interface: {
+    title: '控制面板',
+    textInput: '文本输入',
+    enterText: '在这里输入文本...',
+    dropdown: '下拉菜单',
+    option: '选项',
+    slider: '滑块',
+    checkbox: '启用功能',
+    radioGroup: '选择一个选项',
+    action1: '操作 1',
+    action2: '操作 2',
+    action3: '操作 3'
   }
 };
 

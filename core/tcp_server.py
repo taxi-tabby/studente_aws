@@ -221,6 +221,7 @@ async def process_ws_message(data):
         if action == "test":
             logger.info("테스트 요청 수신")
             await broadcast_to_ws_clients({
+                "type": "test",
                 "service": "test",
                 "status": "success",
                 "message": "테스트 메시지입니다."
@@ -296,6 +297,17 @@ async def process_ws_message(data):
     elif "type" in data:
         message_type = data.get("type")
         
+        
+        
+        if message_type == "test":
+            logger.info("테스트 요청 수신")
+            await broadcast_to_ws_clients({
+                "type": "test",
+                "service": "test",
+                "status": "success",
+                "message": "테스트 메시지입니다."
+            })
+            return {"status": "success", "message": "테스트 메시지가 전송되었습니다."}
         # 활동 모니터링 관련 메시지 처리
         if message_type in [
             message_format.MessageType.KEYBOARD_ACTIVITY,
