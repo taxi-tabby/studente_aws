@@ -47,6 +47,12 @@ const enTranslations = {
     zone: 'Availability Zone',
     actions: 'Actions',
     notAvailable: 'Not available'
+  },
+  timer: {
+    remainingSession: 'Remaining Session Time',
+    hours: 'hours',
+    minutes: 'minutes',
+    seconds: 'seconds'
   }
 };
 
@@ -96,6 +102,12 @@ const koTranslations = {
     zone: '가용 영역',
     actions: '작업',
     notAvailable: '사용 불가'
+  },
+  timer: {
+    remainingSession: '남은 세션 시간',
+    hours: '시간',
+    minutes: '분',
+    seconds: '초'
   }
 };
 
@@ -145,6 +157,12 @@ const jaTranslations = {
     zone: 'アベイラビリティゾーン',
     actions: 'アクション',
     notAvailable: '使用不可'
+  },
+  timer: {
+    remainingSession: '残りセッション時間',
+    hours: '時間',
+    minutes: '分',
+    seconds: '秒'
   }
 };
 
@@ -194,6 +212,12 @@ const zhTranslations = {
     zone: '可用区',
     actions: '操作',
     notAvailable: '不可用'
+  },
+  timer: {
+    remainingSession: '剩余会话时间',
+    hours: '小时',
+    minutes: '分钟',
+    seconds: '秒'
   }
 };
 

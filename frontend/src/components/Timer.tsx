@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Timer.css';
+import { useTranslation } from 'react-i18next';
 
 interface TimerProps {
   value: number; // 밀리초 단위 타이머 값 (서버에서 직접 받은 남은 시간)
@@ -35,6 +36,8 @@ const Timer: React.FC<TimerProps> = ({ value, maxValue = DEFAULT_MAX_VALUE, isAc
   const [timerClass, setTimerClass] = useState('timer-normal');
   const [pulseEffect, setPulseEffect] = useState(false);
   
+  const { t } = useTranslation();
+
   useEffect(() => {
     // 시간이 얼마나 남았는지에 따라 타이머 클래스 결정
     if (percentRemaining <= 10) {
@@ -56,23 +59,23 @@ const Timer: React.FC<TimerProps> = ({ value, maxValue = DEFAULT_MAX_VALUE, isAc
   return (
     <div className={`timer-container ${timerClass} ${pulseEffect ? 'timer-pulse' : ''} ${!isConnected ? 'timer-disconnected' : ''}`}>
       <div className="timer-title">
-        남은 세션 시간
-        {!isConnected && <span className="timer-connection-warning">(연결 끊김)</span>}
+        {t('timer.remainingSession')}
+        {!isConnected && <span className="timer-connection-warning">({t('connection.disconnected')})</span>}
       </div>
       <div className="timer-value">
         <div className="time-unit">
           <span className="time-number">{time.hours.toString().padStart(2, '0')}</span>
-          <span className="time-label">시간</span>
+          <span className="time-label">{t('timer.hours')}</span>
         </div>
         <div className="time-separator">:</div>
         <div className="time-unit">
           <span className="time-number">{time.minutes.toString().padStart(2, '0')}</span>
-          <span className="time-label">분</span>
+          <span className="time-label">{t('timer.minutes')}</span>
         </div>
         <div className="time-separator">:</div>
         <div className="time-unit">
           <span className="time-number">{time.seconds.toString().padStart(2, '0')}</span>
-          <span className="time-label">초</span>
+          <span className="time-label">{t('timer.seconds')}</span>
         </div>
       </div>
       <div className="timer-progress-container">
