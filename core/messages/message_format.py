@@ -365,10 +365,10 @@ def send_timer_start():
     logger.info("타이머 시작 메시지 큐에 추가")
     return send_activity_message(MessageType.TIMER_START)
 
-def send_timer_tick(nowtime=None):
+def send_timer_tick(nowtime=None, maxtime=None):
     """타이머 진행마다 메세지를 전송합니다"""
     logger.info("타이머 시작 메시지 큐에 추가")
-    return send_activity_message(MessageType.TIMER_TICK, {"nowtime": nowtime})
+    return send_activity_message(MessageType.TIMER_TICK, {"nowtime": nowtime, "maxtime": maxtime})
 
 def send_timer_end():
     """타이머 종료 시 메세지를 전송합니다"""

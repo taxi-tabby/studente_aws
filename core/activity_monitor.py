@@ -16,6 +16,7 @@ import signal
 import subprocess
 from pynput import keyboard, mouse
 from win32gui import GetForegroundWindow, GetWindowText
+from core import timer
 from core.messages import message_format
 from core.config.config_loader import config
 from core.service_manager import service_manager
@@ -123,6 +124,10 @@ def monitor_keyboard():
         # 디바운싱: 마지막 이벤트 이후 일정 시간이 지났을 때만 처리
         if (current_time - _last_keyboard_event) > debounce_ms:
             logger.debug(f"키보드 이벤트 감지: {key} - 메시지 전송 시도")
+            
+            # 타이머 리셋
+            timer.ServiceTimer().reset_progress()
+            
             result = message_format.send_keyboard_activity()
             if result:
                 logger.debug("키보드 활동 메시지 전송 성공")
@@ -150,6 +155,8 @@ def monitor_mouse():
         logger.info("마우스 활동 모니터링이 비활성화되어 있습니다.")
         return
     
+
+    
     # 디바운스 시간(밀리초) 설정
     movement_debounce_ms = _get_setting("mouse", {}).get("movement_debounce_ms", 1000)
     click_debounce_ms = _get_setting("mouse", {}).get("click_debounce_ms", 500)
@@ -162,6 +169,10 @@ def monitor_mouse():
         # 디바운싱: 마지막 이벤트 이후 일정 시간이 지났을 때만 처리
         if (current_time - _last_mouse_movement) > movement_debounce_ms:
             logger.debug(f"마우스 이동 감지: ({x},{y}) - 메시지 전송 시도")
+            
+            # 타이머 리셋
+            timer.ServiceTimer().reset_progress()
+            
             result = message_format.send_mouse_movement()
             if result:
                 logger.debug("마우스 이동 메시지 전송 성공")
@@ -179,6 +190,10 @@ def monitor_mouse():
         # 버튼이 눌렸을 때만, 디바운싱 적용
         if pressed and (current_time - _last_mouse_click) > click_debounce_ms:
             logger.debug(f"마우스 클릭 감지: ({x},{y}, {button}) - 메시지 전송 시도")
+            
+            # 타이머 리셋
+            timer.ServiceTimer().reset_progress()
+            
             result = message_format.send_mouse_click()
             if result:
                 logger.debug("마우스 클릭 메시지 전송 성공")
@@ -242,6 +257,10 @@ def monitor_screen_changes():
                 # 유사성이 임계값보다 낮으면 화면 변화로 간주
                 if similarity < threshold:
                     logger.debug(f"화면 변화 감지 (유사성: {similarity:.4f}) - 메시지 전송 시도")
+                    
+                    # 타이머 리셋
+                    timer.ServiceTimer().reset_progress()
+            
                     result = message_format.send_screen_change()
                     if result:
                         logger.debug("화면 변화 메시지 전송 성공")
@@ -327,6 +346,10 @@ def monitor_audio():
                 # 볼륨 레벨이 임계값보다 높으면 소리 재생으로 간주
                 if volume > threshold:
                     logger.debug(f"오디오 재생 감지 (볼륨: {volume}) - 메시지 전송 시도")
+                    
+                    # 타이머 리셋
+                    timer.ServiceTimer().reset_progress()
+                    
                     result = message_format.send_audio_playback(int(volume))
                     if result:
                         logger.debug("오디오 재생 메시지 전송 성공")

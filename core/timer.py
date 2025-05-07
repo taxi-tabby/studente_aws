@@ -23,6 +23,37 @@ class ServiceTimer:
         self._tick_interval_ms = 1000  # Default: 1 second
         self._initialized = True
     
+    
+    def reset_progress(self):
+        """Reset timer progress to full duration without stopping the timer"""
+        if self._running:
+            # Recalculate end time based on current time + full duration
+            self._end_time = time.time() + (self._duration_ms / 1000) + 1
+        return self
+    
+    
+    def add_time(self, milliseconds):
+        """Add milliseconds to the timer's remaining time"""
+        if self._running:
+            self._end_time += milliseconds / 1000
+        else:
+            self._duration_ms += milliseconds
+        return self
+
+    def subtract_time(self, milliseconds):
+        """Subtract milliseconds from the timer's remaining time"""
+        if self._running:
+            self._end_time = max(time.time(), self._end_time - milliseconds / 1000)
+        else:
+            self._duration_ms = max(0, self._duration_ms - milliseconds)
+        return self
+    
+    
+    def get_duration(self):
+        """Return the timer duration in milliseconds"""
+        return self._duration_ms
+    
+    
     def set_duration(self, milliseconds):
         """Set timer duration in milliseconds"""
         self._duration_ms = milliseconds
