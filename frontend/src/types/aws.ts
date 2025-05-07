@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 export interface EC2Instance {
   id: string;
   name: string;
