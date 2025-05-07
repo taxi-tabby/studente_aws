@@ -21,10 +21,16 @@ export class WebSocketClient implements IWebSocketClient {
   private reconnectBackoff: boolean = true;
   private autoReconnect: boolean = true;
   private initialDataRequested: boolean = false;
+  private disconnectCallback: (() => void) | null = null; // 연결 끊김 알림을 위한 콜백
 
   constructor(port: number, messageHandler: (message: any) => void, hostname: string = 'localhost') {
     this.url = `ws://${hostname}:${port}/ws`;
     this.messageHandler = messageHandler;
+  }
+
+  // 연결 끊김 콜백 설정 메서드
+  public setDisconnectCallback(callback: () => void): void {
+    this.disconnectCallback = callback;
   }
 
   public connect(): void {
@@ -131,6 +137,10 @@ export class WebSocketClient implements IWebSocketClient {
     this.initialDataRequested = false;
     this.cleanupExistingSocket();
     
+    if (this.disconnectCallback) {
+      this.disconnectCallback();
+    }
+
     if (this.autoReconnect && !this.reconnectTimer) {
       this.scheduleReconnect();
     }

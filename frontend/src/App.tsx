@@ -70,6 +70,11 @@ function App() {
 			"localhost" // 호스트 명시적으로 설정
 		);
 		
+		 // 연결 끊김 콜백 설정
+		webSocketClient.setDisconnectCallback(() => {
+			setConnectionStatus('Disconnected');
+		});
+		
 		// Store the client in ref for later use
 		webSocketClientRef.current = webSocketClient;
 		
