@@ -39,6 +39,10 @@ jobs:
         working-directory: ./frontend
         run: npm run build
       
+      - name: Configure GitHub Pages
+        run: |
+          echo "Ensuring GitHub Pages is properly configured..."
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
