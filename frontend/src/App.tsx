@@ -200,7 +200,7 @@ function App() {
 
 	// Handle messages received from WebSocket
 	const handleWebSocketMessage = (message: WebSocketMessage) => {
-		console.log("WebSocket 메시지 수신:", message);
+		// console.log("WebSocket 메시지 수신:", message);
 		setConnectionStatus('connected');
 		
 		// Add the message to the console messages
@@ -1027,13 +1027,11 @@ function App() {
 					<div className="console-section">
 						<div className="console-header">
 							<h2>Messages</h2>
-							<button className="clear-console-button" onClick={clearSocketMessages}>
-								{t('buttons.clearConsole')}
-							</button>
 						</div>
 						<WebSocketConsole 
 							messages={socketMessages}
-							isConnected={connectionStatus === 'connected'} 
+							isConnected={connectionStatus === 'connected'}
+							onClearMessages={clearSocketMessages}
 						/>
 					</div>
 				</main>

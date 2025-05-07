@@ -57,6 +57,17 @@ const enTranslations = {
     minutes: 'minutes',
     seconds: 'seconds'
   },
+  console: {
+    noMessages: 'No messages received yet.',
+    selectMessagePrompt: 'Select a message to view details here.',
+    noTimestamp: 'No timestamp',
+    filter: 'Filter',
+    filterAll: 'All messages',
+    filterTest: 'Test messages',
+    filterAws: 'AWS services',
+    filterActivity: 'Activity',
+    filterError: 'Errors'
+  },
   interface: {
     title: 'Control Panel',
     textInput: 'Text Input',
@@ -127,6 +138,17 @@ const koTranslations = {
     hours: '시간',
     minutes: '분',
     seconds: '초'
+  },
+  console: {
+    noMessages: '아직 수신된 메시지가 없습니다.',
+    selectMessagePrompt: '메시지를 선택하면 상세 내용이 여기에 표시됩니다.',
+    noTimestamp: '타임스탬프 없음',
+    filter: '필터',
+    filterAll: '모든 메시지',
+    filterTest: '테스트 메시지',
+    filterAws: 'AWS 서비스',
+    filterActivity: '활동',
+    filterError: '오류'
   },
   interface: {
     title: '제어판',
@@ -199,6 +221,17 @@ const jaTranslations = {
     minutes: '分',
     seconds: '秒'
   },
+  console: {
+    noMessages: 'メッセージはまだ受信されていません。',
+    selectMessagePrompt: 'メッセージを選択すると、ここに詳細が表示されます。',
+    noTimestamp: 'タイムスタンプなし',
+    filter: 'フィルター',
+    filterAll: 'すべてのメッセージ',
+    filterTest: 'テストメッセージ',
+    filterAws: 'AWSサービス',
+    filterActivity: 'アクティビティ',
+    filterError: 'エラー'
+  },
   interface: {
     title: 'コントロールパネル',
     textInput: 'テキスト入力',
@@ -269,6 +302,17 @@ const zhTranslations = {
     hours: '小时',
     minutes: '分钟',
     seconds: '秒'
+  },
+  console: {
+    noMessages: '尚未收到消息。',
+    selectMessagePrompt: '选择一条消息以在此处查看详细信息。',
+    noTimestamp: '无时间戳',
+    filter: '筛选',
+    filterAll: '所有消息',
+    filterTest: '测试消息',
+    filterAws: 'AWS服务',
+    filterActivity: '活动',
+    filterError: '错误'
   },
   interface: {
     title: '控制面板',
