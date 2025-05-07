@@ -46,7 +46,7 @@ credentials.json
 aws_config.json
 
 # 빌드 관련 파일
-*.exe
+# *.exe
 *.spec
 *.manifest
 *.pyc
