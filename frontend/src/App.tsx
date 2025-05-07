@@ -148,7 +148,8 @@ function App() {
 			const activityUpdate: Partial<ActivityStatus> = {
 				keyboard: activityType === "KEYBOARD_ACTIVITY" ? true : false,
 				mouseMovement: activityType === "MOUSE_MOVEMENT" ? true : false,
-				mouseClick: activityType === "MOUSE_CLICK" ? true : false
+				mouseClick: activityType === "MOUSE_CLICK" ? true : false,
+				audio: activityType === "AUDIO_PLAYBACK" ? true : false,
 			};
 			
 			// 활동 상태 업데이트
@@ -163,7 +164,8 @@ function App() {
 					...prev,
 					keyboard: false,
 					mouseMovement: false,
-					mouseClick: false
+					mouseClick: false,
+					audio: false
 				}));
 			}, 1000);
 		}

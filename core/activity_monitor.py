@@ -411,17 +411,17 @@ def start_monitoring():
     keyboard_thread = threading.Thread(target=monitor_keyboard, daemon=True, name="KeyboardMonitor")
     mouse_thread = threading.Thread(target=monitor_mouse, daemon=True, name="MouseMonitor")
     # screen_thread = threading.Thread(target=monitor_screen_changes, daemon=True, name="ScreenMonitor")
-    # audio_thread = threading.Thread(target=monitor_audio, daemon=True, name="AudioMonitor")
+    audio_thread = threading.Thread(target=monitor_audio, daemon=True, name="AudioMonitor")
     
     # 스레드 시작
     keyboard_thread.start()
     mouse_thread.start()
     # screen_thread.start()
-    # audio_thread.start()
+    audio_thread.start()
     
     # 스레드 추적을 위해 목록에 저장
 
-    _monitoring_threads = [keyboard_thread, mouse_thread]
+    _monitoring_threads = [keyboard_thread, mouse_thread, audio_thread]
     # _monitoring_threads = [keyboard_thread, mouse_thread, screen_thread, audio_thread]
     
     # 활동 모니터링 시작 메시지 전송
