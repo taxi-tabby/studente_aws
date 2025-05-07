@@ -13,6 +13,13 @@ import type { EC2Instance, ECSCluster, EKSCluster, ActivityStatus, WebSocketMess
 // WebSocket으로부터 maxtime이 전달되면 이 값을 대체함
 const DEFAULT_MAX_TIMER_VALUE = 30 * 60 * 1000;
 
+// 지원하는 언어 목록
+const SUPPORTED_LANGUAGES = [
+  { code: 'ko', name: '한국어' },
+  { code: 'en', name: 'English' },
+  { code: 'ja', name: '日本語' }
+];
+
 function App() {
 	// State for data received from WebSocket
 	const [activityStatus, setActivityStatus] = useState<ActivityStatus>({
@@ -34,6 +41,12 @@ function App() {
 	const [timerValue, setTimerValue] = useState<number>(0);
 	const [maxTimerValue, setMaxTimerValue] = useState<number>(DEFAULT_MAX_TIMER_VALUE); // 동적으로 설정될 수 있는 최대 타이머 값
 	const [isUserActive, setIsUserActive] = useState<boolean>(false);
+	
+	// 언어 설정 상태 추가
+	const [currentLanguage, setCurrentLanguage] = useState<string>('ko');
+	
+	// 모바일 메뉴 토글 상태
+	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
 	// Reference to WebSocketClient instance
 	const webSocketClientRef = useRef<WebSocketClient | null>(null);
@@ -498,23 +511,68 @@ function App() {
 		return () => clearInterval(activityInterval);
 	}, []);
 
+	// Mobile menu toggle function
+	const toggleMobileMenu = () => {
+		setIsMobileMenuOpen(!isMobileMenuOpen);
+	};
+
 	return (
 		<>
 			<div className="dashboard-container">
 				<header className="dashboard-header">
 					<h1>Studente AWS</h1>
-					<div className="header-controls">
-						<button className="refresh-button" onClick={handleRefreshData}>
-							새로고침
-						</button>
-						<div className={`connection-status ${connectionStatus.toLowerCase().replace('...', '')}`}>
-							{connectionStatus}
-						</div>
-						{connectionStatus === 'Disconnected' && (
-							<button className="retry-button" onClick={handleReconnect}>
-								재연결
+					
+					{/* Mobile menu toggle button */}
+					<button 
+						className="mobile-menu-button" 
+						onClick={toggleMobileMenu}
+						aria-label="Toggle menu"
+					>
+						{isMobileMenuOpen ? '✕' : '☰'}
+					</button>
+					
+					<div className={`header-controls ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+						<div className="header-actions">
+							<button className="refresh-button" onClick={handleRefreshData}>
+								새로고침
 							</button>
-						)}
+							
+							<div className={`connection-status ${connectionStatus.toLowerCase().replace('...', '')}`}>
+								{connectionStatus}
+							</div>
+							
+							{connectionStatus === 'Disconnected' && (
+								<button className="retry-button" onClick={handleReconnect}>
+									재연결
+								</button>
+							)}
+						</div>
+						
+						{/* 언어 선택 드롭다운 */}
+						<div className="language-selector">
+							<span className="language-label">언어 변경</span>
+							<select 
+								value={currentLanguage} 
+								onChange={(e) => setCurrentLanguage(e.target.value)}
+								className="language-dropdown"
+							>
+								{SUPPORTED_LANGUAGES.map(lang => (
+									<option key={lang.code} value={lang.code}>
+										{lang.name}
+									</option>
+								))}
+							</select>
+						</div>
+						
+						{/* About/License 페이지 링크 */}
+						<div className="page-links">
+							<button className="about-button" onClick={() => console.log("About page")}>
+								About
+							</button>
+							<button className="license-button" onClick={() => console.log("License page")}>
+								License
+							</button>
+						</div>
 					</div>
 				</header>
 
