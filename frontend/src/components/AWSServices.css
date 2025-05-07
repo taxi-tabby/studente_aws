@@ -98,3 +98,60 @@
   background-color: #f8e6e6;
   color: #c62828;
 }
+
+/* 연결 해제 상태 스타일 */
+.dashboard-section.disconnected {
+  opacity: 0.7;
+  border: 1px dashed #ccc;
+  background-color: #f8f8f8;
+  box-shadow: none;
+  position: relative;
+}
+
+.connection-warning {
+  color: #e74c3c;
+  font-size: 14px;
+  font-weight: normal;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: rgba(231, 76, 60, 0.1);
+}
+
+.text-disconnected {
+  color: #999;
+  font-style: italic;
+}
+
+.status-disabled {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  background-color: #f0f0f0;
+  color: #777;
+  font-style: italic;
+}
+
+.dashboard-section.disconnected .refresh-button {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  border: 1px solid #ddd;
+}
+
+.dashboard-section.disconnected .refresh-button:hover {
+  background-color: #f0f0f0;
+}
+
+.dashboard-section.disconnected table {
+  color: #999;
+}
+
+.dashboard-section.disconnected .aws-table th {
+  background-color: #f0f0f0;
+}
+
+.dashboard-section.disconnected .aws-table tbody tr:hover {
+  background-color: transparent;
+}

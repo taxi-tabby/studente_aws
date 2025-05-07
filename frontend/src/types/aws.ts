@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export interface EC2Instance {
   id: string;
   name: string;
@@ -9,16 +11,17 @@ export interface EC2Instance {
 export interface ECSCluster {
   name: string;
   status: string;
-  activeServices: number;
-  runningTasks: number;
-  pendingTasks: number;
+  serviceCount: number;
+  taskCount: number;
+  region: string;
 }
 
 export interface EKSCluster {
   name: string;
   status: string;
   version: string;
-  endpoint: string;
+  nodeCount: number;
+  region: string;
 }
 
 export interface ActivityStatus {

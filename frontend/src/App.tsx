@@ -6,7 +6,11 @@ import EC2Instances from './components/EC2Instances'
 import ECSClusters from './components/ECSClusters'
 import EKSClusters from './components/EKSClusters'
 import WebSocketConsole from './components/WebSocketConsole'
+import Timer from './components/Timer'
 import type { EC2Instance, ECSCluster, EKSCluster, ActivityStatus, WebSocketMessage } from './types/aws'
+
+// 타이머 최대값 (30분 = 30 * 60 * 1000 밀리초)
+const MAX_TIMER_VALUE = 30 * 60 * 1000;
 
 function App() {
 	// State for data received from WebSocket
@@ -24,9 +28,10 @@ function App() {
 	const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
 	const [socketMessages, setSocketMessages] = useState<WebSocketMessage[]>([]);
 	const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
-
-	// Mock data for development if WebSocket is not connected
-	// const [useMockData, setUseMockData] = useState<boolean>(false);
+	
+	// 타이머 상태 추가 - 서버에서 전송하는 값을 사용
+	const [timerValue, setTimerValue] = useState<number>(0);
+	const [isUserActive, setIsUserActive] = useState<boolean>(false);
 
 	// Reference to WebSocketClient instance
 	const webSocketClientRef = useRef<WebSocketClient | null>(null);
@@ -56,7 +61,10 @@ function App() {
 			screen: false,
 			audio: false,
 			activeWindow: ''
-		});
+		 });
+		
+		// 타이머 값도 초기화
+		setTimerValue(0);
 	};
 
 	useEffect(() => {
@@ -70,9 +78,11 @@ function App() {
 			"localhost" // 호스트 명시적으로 설정
 		);
 		
-		 // 연결 끊김 콜백 설정
+		// 연결 끊김 콜백 설정
 		webSocketClient.setDisconnectCallback(() => {
 			setConnectionStatus('Disconnected');
+			// 연결이 끊어지면 데이터 초기화
+			loadMockData();
 		});
 		
 		// Store the client in ref for later use
@@ -96,9 +106,12 @@ function App() {
 			// getConnectionStatus 메서드를 통해 연결 상태 확인
 			if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
 				// 연결되었으면 실제 데이터 요청
-				// webSocketClientRef.current.send({
-				// 	action: "getAll"
-				// });
+				webSocketClientRef.current.send({
+					type: "AWS_SERVICE_LIST_ALL",
+					content: {
+						region: "ap-northeast-2"
+					}
+				});
 
 				clearInterval(requestDataInterval);
 			}
@@ -149,6 +162,12 @@ function App() {
 		else if (message.type === "USER_ACTIVITY" && message.content?.activity) {
 			const activityType = message.content.activity;
 			
+			 // TIMER_TICK 처리
+			if (activityType === "TIMER_TICK" && message.content?.nowtime) {
+				setTimerValue(message.content.nowtime);
+				return;
+			}
+			
 			// 활동 유형에 따라 상태 업데이트
 			const activityUpdate: Partial<ActivityStatus> = {
 				keyboard: activityType === "KEYBOARD_ACTIVITY" ? true : false,
@@ -163,6 +182,9 @@ function App() {
 				...activityUpdate
 			}));
 			
+			// 사용자 활동 상태 업데이트
+			setIsUserActive(true);
+			
 			// 깜빡임 효과를 위해 잠시 후 상태 초기화
 			setTimeout(() => {
 				setActivityStatus(prev => ({
@@ -172,6 +194,7 @@ function App() {
 					mouseClick: false,
 					audio: false
 				}));
+				setIsUserActive(false);
 			}, 1000);
 		}
 		// EC2 인스턴스 업데이트 처리
@@ -227,6 +250,9 @@ function App() {
 							...activityUpdate
 						}));
 						
+						// 사용자 활동 상태 업데이트
+						setIsUserActive(true);
+						
 						// 깜빡임 효과를 위해 잠시 후 상태 초기화
 						setTimeout(() => {
 							setActivityStatus(prev => ({
@@ -235,6 +261,7 @@ function App() {
 								mouseMovement: false,
 								mouseClick: false
 							}));
+							setIsUserActive(false);
 						}, 1000);
 					} 
 					// 기존 형식 (객체)
@@ -486,7 +513,18 @@ function App() {
 				</header>
 
 				<main className="dashboard-content">
-					<ActivityMonitor activityStatus={activityStatus} />
+					{/* 모든 컴포넌트에 연결 상태 전달 */}
+					<ActivityMonitor 
+						activityStatus={activityStatus} 
+						isConnected={connectionStatus === 'Connected'} 
+					/>
+					
+					<Timer 
+						value={timerValue} 
+						maxValue={MAX_TIMER_VALUE} 
+						isActive={isUserActive || activityStatus.keyboard || activityStatus.mouseMovement || activityStatus.mouseClick || activityStatus.audio}
+						isConnected={connectionStatus === 'Connected'} 
+					/>
 
 					<div className="aws-services">
 						<EC2Instances 
@@ -494,9 +532,18 @@ function App() {
 							onRefresh={handleRefreshEC2} 
 							onStartInstance={handleStartEC2Instance}
 							onStopInstance={handleStopEC2Instance}
+							isConnected={connectionStatus === 'Connected'}
 						/>
-						<ECSClusters clusters={ecsClusters} onRefresh={handleRefreshECS} />
-						<EKSClusters clusters={eksClusters} onRefresh={handleRefreshEKS} />
+						<ECSClusters 
+							clusters={ecsClusters} 
+							onRefresh={handleRefreshECS}
+							isConnected={connectionStatus === 'Connected'} 
+						/>
+						<EKSClusters 
+							clusters={eksClusters} 
+							onRefresh={handleRefreshEKS}
+							isConnected={connectionStatus === 'Connected'} 
+						/>
 					</div>
 					
 					<div className="console-section">
@@ -506,7 +553,10 @@ function App() {
 								Clear Console
 							</button>
 						</div>
-						<WebSocketConsole messages={socketMessages} />
+						<WebSocketConsole 
+							messages={socketMessages}
+							isConnected={connectionStatus === 'Connected'} 
+						/>
 					</div>
 				</main>
 

@@ -2,7 +2,7 @@
 export interface IWebSocketClient {
   connect(): void;
   disconnect(): void;
-  send(data: any): void;
+  send(data: any): boolean;
   getConnectionStatus(): boolean;
   setAutoReconnect(enable: boolean): void;
   socket: WebSocket | null;
@@ -22,6 +22,8 @@ export class WebSocketClient implements IWebSocketClient {
   private autoReconnect: boolean = true;
   private initialDataRequested: boolean = false;
   private disconnectCallback: (() => void) | null = null; // 연결 끊김 알림을 위한 콜백
+  private connectionCheckTimer: number | null = null;
+  private pingInterval: number | null = null;
 
   constructor(port: number, messageHandler: (message: any) => void, hostname: string = 'localhost') {
     this.url = `ws://${hostname}:${port}/ws`;
@@ -59,6 +61,9 @@ export class WebSocketClient implements IWebSocketClient {
           window.clearTimeout(this.reconnectTimer);
           this.reconnectTimer = null;
         }
+        
+        // 연결 상태 확인을 위한 ping 설정
+        this.setupPingInterval();
         
         if (!this.initialDataRequested) {
           this.initialDataRequested = true;
@@ -106,10 +111,42 @@ export class WebSocketClient implements IWebSocketClient {
         
         this.handleDisconnect();
       };
+
+      // 연결 타임아웃 설정
+      this.connectionCheckTimer = window.setTimeout(() => {
+        if (this.isConnecting && (!this.socket || this.socket.readyState !== WebSocket.OPEN)) {
+          console.log('WebSocket 연결 시간 초과');
+          this.handleDisconnect();
+        }
+      }, 5000); // 5초 타임아웃
+
     } catch (error) {
       console.error('WebSocket 생성 실패:', error);
       this.handleDisconnect();
     }
+  }
+
+  private setupPingInterval(): void {
+    // 이전 인터벌 정리
+    if (this.pingInterval) {
+      window.clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+
+    // 30초마다 ping 메시지 전송하여 연결 유지
+    this.pingInterval = window.setInterval(() => {
+      try {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+          this.socket.send(JSON.stringify({ type: 'PING', timestamp: Date.now() }));
+        } else {
+          console.log('Ping 실패: 연결 끊김');
+          this.handleDisconnect();
+        }
+      } catch (error) {
+        console.error('Ping 전송 실패:', error);
+        this.handleDisconnect();
+      }
+    }, 30000); // 30초마다 실행
   }
 
   private cleanupExistingSocket(): void {
@@ -129,6 +166,17 @@ export class WebSocketClient implements IWebSocketClient {
       }
     }
     this._isConnected = false;
+
+    // 타이머 정리
+    if (this.connectionCheckTimer) {
+      window.clearTimeout(this.connectionCheckTimer);
+      this.connectionCheckTimer = null;
+    }
+    
+    if (this.pingInterval) {
+      window.clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
   }
 
   private handleDisconnect(): void {
@@ -160,6 +208,7 @@ export class WebSocketClient implements IWebSocketClient {
     
     let delay = this.reconnectInterval;
     if (this.reconnectBackoff) {
+      // 지수 백오프 적용 (최대 30초)
       delay = Math.min(30000, this.reconnectInterval * Math.pow(1.5, this.reconnectAttempts - 1));
     }
     
@@ -181,7 +230,7 @@ export class WebSocketClient implements IWebSocketClient {
     }
   }
 
-  public send(data: any): void {
+  public send(data: any): boolean {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       console.error('WebSocket이 연결되지 않았습니다');
       
@@ -190,7 +239,7 @@ export class WebSocketClient implements IWebSocketClient {
         this.connect();
       }
       
-      return;
+      return false;
     }
 
     try {
@@ -200,7 +249,7 @@ export class WebSocketClient implements IWebSocketClient {
       if (typeof data === 'string') {
         this.socket.send(data);
         console.log('WebSocket 텍스트 명령어 전송:', data);
-        return;
+        return true;
       }
       
       // 객체 메시지 처리
@@ -285,6 +334,32 @@ export class WebSocketClient implements IWebSocketClient {
                 }
               };
               break;
+
+            case 'startInstance':
+              messageToSend = {
+                id: `req-${Date.now()}`,
+                type: 'AWS_EC2_START_INSTANCE',
+                timestamp: Math.floor(Date.now() / 1000),
+                source: 'web-client',
+                content: {
+                  instanceId: data.instanceId,
+                  region: data.region || 'ap-northeast-2'
+                }
+              };
+              break;
+
+            case 'stopInstance':
+              messageToSend = {
+                id: `req-${Date.now()}`,
+                type: 'AWS_EC2_STOP_INSTANCE',
+                timestamp: Math.floor(Date.now() / 1000),
+                source: 'web-client',
+                content: {
+                  instanceId: data.instanceId,
+                  region: data.region || 'ap-northeast-2'
+                }
+              };
+              break;
               
             default:
               // 기본 메시지 형식
@@ -323,29 +398,31 @@ export class WebSocketClient implements IWebSocketClient {
       const jsonString = JSON.stringify(messageToSend);
       console.log('WebSocket 메시지 전송:', messageToSend);
       this.socket.send(jsonString);
+      return true;
     } catch (error) {
       console.error('WebSocket 메시지 전송 오류:', error);
+      return false;
     }
   }
 
-  public refreshService(service: string): void {
+  public refreshService(service: string): boolean {
     if (!this._isConnected) {
       console.warn(`${service} 데이터 새로고침 실패: 연결되지 않음`);
-      return;
+      return false;
     }
     
     console.log(`${service} 데이터 새로고침 요청`);
-    this.send({ action: 'refresh', service: service });
+    return this.send({ action: 'refresh', service: service });
   }
   
-  public startActivityMonitoring(): void {
+  public startActivityMonitoring(): boolean {
     if (!this._isConnected) {
       console.warn('활동 모니터링 시작 실패: 연결되지 않음');
-      return;
+      return false;
     }
     
     console.log('활동 모니터링 시작 요청');
-    this.send({ action: 'startMonitoring' });
+    return this.send({ type: 'START_ACTIVITY_MONITORING' });
   }
 
   public disconnect(): void {
@@ -362,5 +439,11 @@ export class WebSocketClient implements IWebSocketClient {
   public setAutoReconnect(enable: boolean): void {
     this.autoReconnect = enable;
     console.log(`WebSocket 자동 재연결 ${enable ? '활성화' : '비활성화'}`);
+    
+    // 자동 재연결이 활성화되고 현재 연결이 끊긴 상태이면 재연결 시도
+    if (enable && !this._isConnected && !this.isConnecting && !this.reconnectTimer) {
+      console.log('자동 재연결 활성화로 인한 재연결 시도');
+      this.connect();
+    }
   }
 }

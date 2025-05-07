@@ -7,26 +7,40 @@ interface EC2InstancesProps {
   onRefresh?: () => void;
   onStartInstance?: (instanceId: string) => void;
   onStopInstance?: (instanceId: string) => void;
+  isConnected?: boolean; // 연결 상태 추가
 }
 
-const EC2Instances: React.FC<EC2InstancesProps> = ({ instances, onRefresh, onStartInstance, onStopInstance }) => {
+const EC2Instances: React.FC<EC2InstancesProps> = ({ 
+  instances, 
+  onRefresh, 
+  onStartInstance, 
+  onStopInstance,
+  isConnected = true // 기본값은 연결된 상태
+}) => {
   const handleStartInstance = (instanceId: string) => {
-    if (onStartInstance) {
+    if (onStartInstance && isConnected) {
       onStartInstance(instanceId);
     }
   };
 
   const handleStopInstance = (instanceId: string) => {
-    if (onStopInstance) {
+    if (onStopInstance && isConnected) {
       onStopInstance(instanceId);
     }
   };
 
   return (
-    <div className="dashboard-section">
+    <div className={`dashboard-section ${!isConnected ? 'disconnected' : ''}`}>
       <div className="section-header">
-        <h2>EC2 Instances</h2>
-        <button className="refresh-button" onClick={onRefresh}>
+        <h2>
+          EC2 Instances
+          {!isConnected && <span className="connection-warning">(연결 끊김)</span>}
+        </h2>
+        <button 
+          className="refresh-button" 
+          onClick={onRefresh}
+          disabled={!isConnected}
+        >
           <span className="refresh-icon">🔄</span> Refresh
         </button>
       </div>
@@ -55,28 +69,34 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({ instances, onRefresh, onSta
                 <td>{instance.type}</td>
                 <td>{instance.zone}</td>
                 <td className="action-buttons">
-                  {instance.state === 'stopped' && (
-                    <button 
-                      className="start-button"
-                      onClick={() => handleStartInstance(instance.id)}
-                      title="Start Instance"
-                    >
-                      <span role="img" aria-label="Start">▶️ Start</span>
-                    </button>
-                  )}
-                  {instance.state === 'running' && (
-                    <button 
-                      className="stop-button"
-                      onClick={() => handleStopInstance(instance.id)}
-                      title="Stop Instance"
-                    >
-                      <span role="img" aria-label="Stop">⏹️ Stop</span>
-                    </button>
-                  )}
-                  {instance.state !== 'running' && instance.state !== 'stopped' && (
-                    <span className="status-badge transitioning">
-                      {instance.state}...
-                    </span>
+                  {isConnected ? (
+                    <>
+                      {instance.state === 'stopped' && (
+                        <button 
+                          className="start-button"
+                          onClick={() => handleStartInstance(instance.id)}
+                          title="Start Instance"
+                        >
+                          <span role="img" aria-label="Start">▶️ Start</span>
+                        </button>
+                      )}
+                      {instance.state === 'running' && (
+                        <button 
+                          className="stop-button"
+                          onClick={() => handleStopInstance(instance.id)}
+                          title="Stop Instance"
+                        >
+                          <span role="img" aria-label="Stop">⏹️ Stop</span>
+                        </button>
+                      )}
+                      {instance.state !== 'running' && instance.state !== 'stopped' && (
+                        <span className="status-badge transitioning">
+                          {instance.state}...
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="status-disabled">사용 불가</span>
                   )}
                 </td>
               </tr>
@@ -84,7 +104,9 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({ instances, onRefresh, onSta
           </tbody>
         </table>
       ) : (
-        <p>No EC2 instances available</p>
+        <p className={!isConnected ? 'text-disconnected' : ''}>
+          {isConnected ? 'No EC2 instances available' : '연결이 끊어져 데이터를 표시할 수 없습니다.'}
+        </p>
       )}
     </div>
   );

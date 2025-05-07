@@ -7,20 +7,66 @@
   border-radius: 8px;
 }
 
-.activity-indicator {
+.activity-monitor {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.activity-monitor.disconnected {
+  background-color: #f8f8f8;
+  box-shadow: none;
+  opacity: 0.7;
+  border: 1px dashed #cccccc;
+}
+
+.activity-monitor h2 {
+  font-size: 18px;
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 15px;
-  background-color: #ffffff;
-  border-radius: 5px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.connection-warning {
+  color: #e74c3c;
+  font-size: 14px;
+  font-weight: normal;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: rgba(231, 76, 60, 0.1);
+}
+
+.activity-indicators {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+.activity-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+.activity-indicator.active {
+  background-color: rgba(46, 204, 113, 0.1);
+  box-shadow: 0 2px 10px rgba(46, 204, 113, 0.2);
 }
 
 .activity-indicator.disabled {
-  opacity: 0.6;
-  background-color: #f9f9f9;
-  position: relative;
+  background-color: #eee;
+  color: #999;
+  cursor: not-allowed;
 }
 
 .activity-indicator.disabled small {
@@ -28,6 +74,12 @@
   right: 40px;
   color: #888;
   font-style: italic;
+}
+
+.indicator-label {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #555;
 }
 
 .indicator-light {
@@ -45,16 +97,55 @@
   animation: pulse 1.5s infinite;
 }
 
+.indicator-status {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  transition: all 0.2s ease;
+}
+
+.indicator-status.active {
+  background-color: #2ecc71;
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.2);
+  animation: pulse 1.5s infinite;
+}
+
+.activity-indicator.disabled .indicator-status {
+  background-color: #ccc;
+  animation: none;
+  box-shadow: none;
+}
+
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+    box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
   }
+}
+
+.active-window {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.window-label {
+  font-weight: 600;
+  margin-right: 8px;
+  color: #555;
+}
+
+.window-name {
+  font-family: monospace;
+  color: #333;
 }
 
 .active-window-name {

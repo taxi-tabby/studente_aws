@@ -3,15 +3,148 @@
 }
 
 .websocket-console {
-  background-color: #1e1e1e;
-  color: #f0f0f0;
-  border-radius: 5px;
-  padding: 10px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 0.85em;
-  height: 880px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #f6f8fa;
+  height: 300px;
   overflow-y: auto;
-  max-height: 880px;
+  margin-top: 10px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  transition: opacity 0.3s ease;
+}
+
+.websocket-console.disconnected {
+  opacity: 0.7;
+  border: 1px dashed #ccc;
+  background-color: #f8f8f8;
+}
+
+.connection-status-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.connection-status-message {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  padding: 10px 15px;
+  border-radius: 4px;
+  color: #856404;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.connection-status-icon {
+  font-size: 1.2em;
+}
+
+.no-messages {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.message-list {
+  padding: 5px 0;
+}
+
+/* 메시지 아이템 스타일링 - 접이식 디자인 */
+.message-item {
+  border-bottom: 1px solid #e1e4e8;
+  margin-bottom: 0;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.message-item:hover {
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.message-item.expanded {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+/* 접힌 상태의 메시지 요약 */
+.message-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.message-timestamp {
+  color: #586069;
+  min-width: 70px;
+}
+
+.message-type-summary {
+  flex-grow: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #0366d6;
+}
+
+.message-expand-icon {
+  color: #586069;
+  font-size: 0.8em;
+  padding: 0 5px;
+  transition: transform 0.2s ease;
+}
+
+.message-item.expanded .message-expand-icon {
+  transform: rotate(180deg);
+}
+
+/* 펼친 상태의 메시지 상세 */
+.message-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e1e4e8;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-type-full {
+  font-weight: bold;
+  color: #0366d6;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+}
+
+.message-content {
+  background-color: #f1f8ff;
+  padding: 8px;
+  border-radius: 4px;
+  overflow: auto;
+  max-height: 300px;
+}
+
+.message-content pre {
+  margin: 0;
+  color: #24292e;
+  font-size: 0.85em;
+  white-space: pre-wrap;
 }
 
 .console-message {
@@ -24,32 +157,6 @@
   border-bottom: none;
 }
 
-.message-header {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 5px;
-  color: #8a8a8a;
-}
-
-.message-timestamp {
-  color: #6a9955;
-}
-
-.message-type {
-  color: #569cd6;
-  font-weight: bold;
-}
-
-.message-source {
-  color: #ce9178;
-}
-
-.message-content {
-  margin: 0;
-  padding: 5px;
-  background-color: #252526;
-  border-radius: 3px;
-  white-space: pre-wrap;
-  overflow-x: auto;
-  color: #dcdcdc;
+.console-end {
+  height: 1px;
 }
