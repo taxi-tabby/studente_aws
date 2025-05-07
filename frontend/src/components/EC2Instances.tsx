@@ -55,7 +55,7 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
               <th>{t('table.id')}</th>
               <th>{t('table.state')}</th>
               <th>{t('table.type')}</th>
-              <th>{t('table.zone')}</th>
+              <th>{t('table.region')}</th>
               <th>{t('table.actions')}</th>
             </tr>
           </thead>
@@ -70,7 +70,7 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
                   </span>
                 </td>
                 <td>{instance.type}</td>
-                <td>{instance.zone}</td>
+                <td>{instance.region}</td>
                 <td className="action-buttons">
                   {isConnected ? (
                     <>
@@ -80,7 +80,7 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
                           onClick={() => handleStartInstance(instance.id)}
                           title={t('buttons.start')}
                         >
-                          <span role="img" aria-label="Start">▶️ {t('buttons.start')}</span>
+                          <span role="img" aria-label="Start">▶️</span>
                         </button>
                       )}
                       {instance.state === 'running' && (
@@ -89,7 +89,7 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
                           onClick={() => handleStopInstance(instance.id)}
                           title={t('buttons.stop')}
                         >
-                          <span role="img" aria-label="Stop">⏹️ {t('buttons.stop')}</span>
+                          <span role="img" aria-label="Stop">⏹️</span>
                         </button>
                       )}
                       {instance.state !== 'running' && instance.state !== 'stopped' && (

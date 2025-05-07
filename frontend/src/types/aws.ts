@@ -3,7 +3,10 @@ export interface EC2Instance {
   name: string;
   state: string;
   type: string;
-  zone: string;
+  zone?: string;
+  region: string;
+  public_ip?: string;
+  private_ip?: string;
 }
 
 export interface ECSCluster {

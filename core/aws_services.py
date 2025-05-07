@@ -5,9 +5,15 @@ import logging
 import boto3
 from botocore.exceptions import ClientError
 from core.aws_auth import aws_auth
+from core.config.config_loader import config
 
 # 로거 설정
 logger = logging.getLogger(__name__)
+
+# 기본 AWS 리전 설정
+aws_regions = config.settings.get("aws", {}).get("regions", ["ap-northeast-2"])
+DEFAULT_REGION = aws_regions[0] if aws_regions else "ap-northeast-2"
+logger.info(f"AWS 기본 리전: {DEFAULT_REGION}")
 
 def _get_ec2_client(region):
     """EC2 클라이언트를 생성합니다.
@@ -51,47 +57,53 @@ def _get_eks_client(region):
         return session.client('eks')
     return None
 
-def list_ec2_instances(region):
+def list_ec2_instances(region=None):
     """EC2 인스턴스 목록을 조회합니다.
     
     Args:
-        region: AWS 리전
+        region: AWS 리전 (None인 경우 모든 리전 조회)
         
     Returns:
         list: EC2 인스턴스 목록
     """
-    client = _get_ec2_client(region)
-    if not client:
-        logger.error("AWS 인증 정보가 없습니다.")
-        return []
+    instances = []
     
-    try:
-        response = client.describe_instances()
-        instances = []
-        
-        for reservation in response.get('Reservations', []):
-            for instance in reservation.get('Instances', []):
-                # 인스턴스 이름 찾기
-                name = ""
-                for tag in instance.get('Tags', []):
-                    if tag['Key'] == 'Name':
-                        name = tag['Value']
-                        break
-                
-                instances.append({
-                    'id': instance.get('InstanceId'),
-                    'type': instance.get('InstanceType'),
-                    'state': instance.get('State', {}).get('Name'),
-                    'name': name,
-                    'public_ip': instance.get('PublicIpAddress'),
-                    'private_ip': instance.get('PrivateIpAddress')
-                })
-        
-        return instances
+    # 모든 리전을 조회하는 경우
+    regions_to_check = [region] if region else aws_regions
+    logger.info(f"EC2 인스턴스 조회 리전: {regions_to_check}")
     
-    except ClientError as e:
-        logger.error(f"EC2 인스턴스 목록 조회 중 오류 발생: {e}")
-        return []
+    for current_region in regions_to_check:
+        client = _get_ec2_client(current_region)
+        if not client:
+            logger.error(f"AWS 인증 정보가 없습니다. 리전: {current_region}")
+            continue
+        
+        try:
+            response = client.describe_instances()
+            
+            for reservation in response.get('Reservations', []):
+                for instance in reservation.get('Instances', []):
+                    # 인스턴스 이름 찾기
+                    name = ""
+                    for tag in instance.get('Tags', []):
+                        if tag['Key'] == 'Name':
+                            name = tag['Value']
+                            break
+                    
+                    instances.append({
+                        'id': instance.get('InstanceId'),
+                        'type': instance.get('InstanceType'),
+                        'state': instance.get('State', {}).get('Name'),
+                        'name': name,
+                        'public_ip': instance.get('PublicIpAddress'),
+                        'private_ip': instance.get('PrivateIpAddress'),
+                        'region': current_region  # 리전 정보 추가
+                    })
+            
+        except ClientError as e:
+            logger.error(f"EC2 인스턴스 목록 조회 중 오류 발생 (리전: {current_region}): {e}")
+    
+    return instances
 
 def start_ec2_instance(instance_id, region):
     """EC2 인스턴스를 시작합니다.

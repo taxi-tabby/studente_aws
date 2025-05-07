@@ -102,23 +102,43 @@
 
 .aws-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .aws-table th,
 .aws-table td {
   padding: 12px 15px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #eaeaea;
 }
 
 .aws-table th {
-  background-color: #f9f9f9;
-  font-weight: bold;
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #344767;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.aws-table tbody tr {
+  transition: all 0.2s ease;
 }
 
 .aws-table tbody tr:hover {
-  background-color: #f5f5f5;
+  background-color: rgba(242, 245, 250, 0.8);
+}
+
+.aws-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .aws-table .endpoint {
@@ -130,27 +150,106 @@
 
 .status-badge {
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
-  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75em;
+  font-weight: 600;
   text-transform: capitalize;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .status-badge.running,
 .status-badge.active {
-  background-color: #e3f5e9;
-  color: #1e8a4c;
+  background-color: rgba(46, 204, 113, 0.15);
+  color: #16a34a;
+  border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
 .status-badge.pending,
 .status-badge.provisioning {
-  background-color: #fff8e6;
-  color: #ba8b00;
+  background-color: rgba(241, 196, 15, 0.15);
+  color: #ca8a04;
+  border: 1px solid rgba(241, 196, 15, 0.3);
 }
 
 .status-badge.stopped,
 .status-badge.inactive {
-  background-color: #f8e6e6;
-  color: #c62828;
+  background-color: rgba(231, 76, 60, 0.15);
+  color: #dc2626;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.status-badge.transitioning {
+  background-color: rgba(52, 152, 219, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+/* 액션 버튼 컨테이너 스타일 */
+.aws-table .action-buttons {
+  min-width: 100px;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow-x: auto;
+  padding: 6px 10px;
+}
+
+/* 스크롤바 스타일링 (웹킷 기반 브라우저) */
+.aws-table .action-buttons::-webkit-scrollbar {
+  height: 3px;
+}
+
+.aws-table .action-buttons::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.aws-table .action-buttons::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.aws-table .action-buttons::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* 액션 버튼 기본 스타일 */
+.aws-table .action-buttons button {
+  padding: 4px 8px;
+  margin-right: 5px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background-color: #f8f9fa;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 시작 버튼 스타일 */
+.aws-table .action-buttons .start-button {
+  color: #16a34a;
+  background-color: rgba(46, 204, 113, 0.1);
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+.aws-table .action-buttons .start-button:hover {
+  background-color: rgba(46, 204, 113, 0.2);
+}
+
+/* 중지 버튼 스타일 */
+.aws-table .action-buttons .stop-button {
+  color: #dc2626;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-color: rgba(231, 76, 60, 0.3);
+}
+
+.aws-table .action-buttons .stop-button:hover {
+  background-color: rgba(231, 76, 60, 0.2);
 }
