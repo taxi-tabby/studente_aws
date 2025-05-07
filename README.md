@@ -1,12 +1,12 @@
-# AWS Monitoring System
+# Studente AWS
 
 ![AWS Monitoring](./readmeasset/s1.gif)
 
-*Read this in: [English](#aws-monitoring-system) | [한국어](#aws-모니터링-시스템) | [日本語](#aws監視システム) | [中文](#aws监控系统)*
+*Read this in: [English](#studente-aws) | [한국어](#studente-aws-1) | [日本語](#studente-aws-2) | [中文](#studente-aws-3)*
 
 ## Overview
 
-AWS Monitoring System is a comprehensive tool for real-time monitoring and management of AWS resources. The application provides a user-friendly interface to track EC2 instances, ECS clusters, and EKS clusters across multiple regions, combined with local system activity monitoring capabilities.
+Studente AWS is a comprehensive tool for real-time monitoring and management of AWS resources designed specifically for budget-conscious developers. This solution helps developers manage and optimize AWS resource usage to reduce costs while maintaining necessary services. The application provides a user-friendly interface to track EC2 instances, ECS clusters, and EKS clusters across multiple regions, combined with local system activity monitoring capabilities.
 
 ## Features
 
@@ -84,11 +84,11 @@ For Linux/MacOS:
 
 ---
 
-# AWS 모니터링 시스템
+# Studente AWS
 
 ## 개요
 
-AWS 모니터링 시스템은 AWS 리소스를 실시간으로 모니터링하고 관리하기 위한 종합 도구입니다. 이 애플리케이션은 여러 리전에 걸쳐 EC2 인스턴스, ECS 클러스터 및 EKS 클러스터를 추적할 수 있는 사용자 친화적인 인터페이스를 제공하며, 로컬 시스템 활동 모니터링 기능이 통합되어 있습니다.
+Studente AWS는 예산이 제한된 개발자를 위한 AWS 리소스 요금 관리 솔루션입니다. 이 도구는 개발자들이 필요한 서비스를 유지하면서 AWS 리소스 사용을 최적화하고 비용을 절감할 수 있도록 도와줍니다. 이 애플리케이션은 여러 리전에 걸쳐 EC2 인스턴스, ECS 클러스터 및 EKS 클러스터를 추적할 수 있는 사용자 친화적인 인터페이스를 제공하며, 로컬 시스템 활동 모니터링 기능이 통합되어 있습니다.
 
 ## 기능
 
@@ -154,11 +154,11 @@ AWS 모니터링 시스템은 AWS 리소스를 실시간으로 모니터링하�
 
 ---
 
-# AWS監視システム
+# Studente AWS
 
 ## 概要
 
-AWS監視システムは、AWSリソースをリアルタイムで監視および管理するための包括的なツールです。このアプリケーションは、複数のリージョンにわたるEC2インスタンス、ECSクラスター、およびEKSクラスターを追跡するためのユーザーフレンドリーなインターフェースを提供し、ローカルシステムのアクティビティ監視機能も統合されています。
+Studente AWSは、予算の限られた開発者のためのAWSリソース料金管理ソリューションです。このツールは、開発者が必要なサービスを維持しながらAWSリソースの使用を最適化し、コストを削減するのに役立ちます。このアプリケーションは、複数のリージョンにわたるEC2インスタンス、ECSクラスター、およびEKSクラスターを追跡するためのユーザーフレンドリーなインターフェースを提供し、ローカルシステムのアクティビティ監視機能も統合されています。
 
 ## 特徴
 
@@ -224,11 +224,11 @@ AWS監視システムは、AWSリソースをリアルタイムで監視およ�
 
 ---
 
-# AWS监控系统
+# Studente AWS
 
 ## 概述
 
-AWS监控系统是一个全面的工具，用于实时监控和管理AWS资源。该应用程序提供了用户友好的界面，可跟踪多个区域的EC2实例、ECS集群和EKS集群，并结合本地系统活动监控功能。
+Studente AWS是为预算有限的开发人员设计的AWS资源费用管理解决方案。该工具帮助开发人员在维持必要服务的同时优化AWS资源使用并降低成本。该应用程序提供了用户友好的界面，可跟踪多个区域的EC2实例、ECS集群和EKS集群，并结合本地系统活动监控功能。
 
 ## 功能
 
