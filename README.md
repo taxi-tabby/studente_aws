@@ -1,5 +1,3 @@
-# Studente AWS
-
 ![AWS Monitoring](./readmeasset/banner1.jpg)
 
 *Read this in: [English](#studente-aws) | [한국어](#studente-aws-1) | [日本語](#studente-aws-2) | [中文](#studente-aws-3)*
