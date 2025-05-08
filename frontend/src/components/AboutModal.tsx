@@ -26,18 +26,11 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           <h4>Development Status</h4>
           <p><strong>⚠️ CURRENTLY UNDER DEVELOPMENT ⚠️</strong></p>
         </div>
-        
-        <h4>Features</h4>
-        <ul>
-          <li>EC2 Instance Management</li>
-          <li>ECS Cluster Monitoring</li>
-          <li>EKS Cluster Monitoring</li>
-          <li>User Activity Tracking</li>
-          <li>Timer-based Resource Management</li>
-        </ul>
-        
-        <h4>Version</h4>
-        <p>1.0.0</p>
+
+        <div className="github-repo">
+          <h4>GitHub Repository</h4>
+          <p><a href="https://github.com/taxi-tabby/studente_aws" target="_blank" rel="noopener noreferrer">https://github.com/taxi-tabby/studente_aws</a></p>
+        </div>
 
         <h4>만든 넘</h4>
         <p>아직 까진 나 혼자 단독 개발</p>

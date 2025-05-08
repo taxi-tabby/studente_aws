@@ -25,10 +25,10 @@ const LicenseModal: React.FC<LicenseModalProps> = ({ isOpen, onClose }) => {
         <h3>{t('license.projectLicense', 'Project License')}</h3>
         <div className="project-license">
           <h4>{t('license.backendTitle', 'Python Server Project')}</h4>
-          <p>{t('license.noLicense', 'No License - All Rights Reserved')}</p>
+          <p>{t('license.noLicense', 'No License')}</p>
           
           <h4>{t('license.frontendTitle', 'Frontend Project')}</h4>
-          <p>{t('license.noLicense', 'No License - All Rights Reserved')}</p>
+          <p>{t('license.noLicense', 'No License')}</p>
           
           <p>Copyright &copy; {new Date().getFullYear()} Studente AWS</p>
         </div>
