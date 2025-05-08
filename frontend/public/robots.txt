@@ -1,0 +1,10 @@
+# Robots.txt file for Studente AWS Monitor
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://yourdomain.com/sitemap.xml
+
+# Disallow specific paths if needed
+# Disallow: /private/
+# Disallow: /admin/
