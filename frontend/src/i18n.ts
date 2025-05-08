@@ -20,15 +20,41 @@ const enTranslations = {
     reset: 'Reset',
     submit: 'Submit'
   },
+  password: {
+    title: 'Access Password',
+    description: 'Enter password to access dashboard.',
+    placeholder: 'Enter password',
+    submit: 'Confirm',
+    verifying: 'Verifying password...',
+    creating: 'Setting password...',
+    error: {
+      empty: 'Please enter a password.',
+      invalid: 'Invalid password.',
+      mismatch: 'Passwords do not match.',
+      tooShort: 'Password must be at least 6 characters.',
+      connectionRequired: 'Server connection required. Connecting...',
+      connectionFailed: 'Unable to connect to server. Make sure tracker application is running.',
+      setup: 'An error occurred while setting the password.'
+    },
+    setup: {
+      title: 'Set Password',
+      description: 'Set a password to access the dashboard.',
+      new: 'New Password',
+      confirm: 'Confirm Password',
+      newPlaceholder: 'Enter new password (min. 6 characters)',
+      confirmPlaceholder: 'Re-enter password',
+      submit: 'Set Password'
+    }
+  },
   download: {
     title: 'Download Tracker Application (Currently unavailable: under development)',
     description: 'Connect to AWS services, you need to install the Studente AWS Tracker application.',
     windows: 'Download for Windows'
-  },
-  header: {
+  },  header: {
     language: 'Language',
     about: 'About',
-    license: 'License'
+    license: 'License',
+    logout: 'Logout'
   },
   aws: {
     instances: 'Instances',
@@ -107,15 +133,41 @@ const koTranslations = {
     reset: '초기화',
     submit: '제출'
   },
+  password: {
+    title: '접근 비밀번호',
+    description: '대시보드에 접근하려면 비밀번호를 입력하세요.',
+    placeholder: '비밀번호 입력',
+    submit: '확인',
+    verifying: '비밀번호 확인 중...',
+    creating: '비밀번호 설정 중...',
+    error: {
+      empty: '비밀번호를 입력해주세요.',
+      invalid: '잘못된 비밀번호입니다.',
+      mismatch: '비밀번호가 일치하지 않습니다.',
+      tooShort: '비밀번호는 최소 6자 이상이어야 합니다.',
+      connectionRequired: '서버 연결이 필요합니다. 연결 중입니다...',
+      connectionFailed: '서버에 연결할 수 없습니다. 트래커 애플리케이션이 실행 중인지 확인하세요.',
+      setup: '비밀번호 설정 중 오류가 발생했습니다.'
+    },
+    setup: {
+      title: '비밀번호 설정',
+      description: '대시보드 접근을 위한 비밀번호를 설정하세요.',
+      new: '새 비밀번호',
+      confirm: '비밀번호 확인',
+      newPlaceholder: '새 비밀번호 입력 (6자 이상)',
+      confirmPlaceholder: '비밀번호 재입력',
+      submit: '비밀번호 설정'
+    }
+  },
   download: {
     title: '트래커 애플리케이션 다운로드 (Currently unavailable: under development)',
     description: 'AWS 서비스에 연결하려면 Studente AWS 트래커 애플리케이션을 설치해야 합니다.',
     windows: '윈도우용 다운로드'
-  },
-  header: {
+  },  header: {
     language: '언어',
     about: '소개',
-    license: '라이선스'
+    license: '라이선스',
+    logout: '로그아웃'
   },
   aws: {
     instances: '인스턴스',
@@ -194,15 +246,41 @@ const jaTranslations = {
     reset: 'リセット',
     submit: '送信'
   },
+  password: {
+    title: 'アクセスパスワード',
+    description: 'ダッシュボードにアクセスするにはパスワードを入力してください。',
+    placeholder: 'パスワードを入力',
+    submit: '確認',
+    verifying: 'パスワードを確認中...',
+    creating: 'パスワードを設定中...',
+    error: {
+      empty: 'パスワードを入力してください。',
+      invalid: 'パスワードが正しくありません。',
+      mismatch: 'パスワードが一致しません。',
+      tooShort: 'パスワードは6文字以上である必要があります。',
+      connectionRequired: 'サーバー接続が必要です。接続中...',
+      connectionFailed: 'サーバーに接続できません。トラッカーアプリケーションが実行中か確認してください。',
+      setup: 'パスワードの設定中にエラーが発生しました。'
+    },
+    setup: {
+      title: 'パスワード設定',
+      description: 'ダッシュボードアクセス用のパスワードを設定してください。',
+      new: '新しいパスワード',
+      confirm: 'パスワード確認',
+      newPlaceholder: '新しいパスワードを入力（6文字以上）',
+      confirmPlaceholder: 'パスワードを再入力',
+      submit: 'パスワードを設定'
+    }
+  },
   download: {
     title: 'トラッカーアプリケーションのダウンロード (Currently unavailable: under development)',
     description: 'AWSサービスに接続するには、Studente AWSトラッカーアプリケーションをインストールする必要があります。',
     windows: 'Windows版をダウンロード'
-  },
-  header: {
+  },  header: {
     language: '言語',
     about: '概要',
-    license: 'ライセンス'
+    license: 'ライセンス',
+    logout: 'ログアウト'
   },
   aws: {
     instances: 'インスタンス',
@@ -281,15 +359,41 @@ const zhTranslations = {
     reset: '重置',
     submit: '提交'
   },
+  password: {
+    title: '访问密码',
+    description: '请输入密码以访问仪表板。',
+    placeholder: '输入密码',
+    submit: '确认',
+    verifying: '验证密码中...',
+    creating: '设置密码中...',
+    error: {
+      empty: '请输入密码。',
+      invalid: '密码无效。',
+      mismatch: '密码不匹配。',
+      tooShort: '密码必须至少6个字符。',
+      connectionRequired: '需要服务器连接。连接中...',
+      connectionFailed: '无法连接到服务器。请确认跟踪应用程序正在运行。',
+      setup: '设置密码时发生错误。'
+    },
+    setup: {
+      title: '设置密码',
+      description: '设置密码以访问仪表板。',
+      new: '新密码',
+      confirm: '确认密码',
+      newPlaceholder: '输入新密码（至少6个字符）',
+      confirmPlaceholder: '再次输入密码',
+      submit: '设置密码'
+    }
+  },
   download: {
     title: '下载跟踪器应用程序 (Currently unavailable: under development)',
     description: '要连接到 AWS 服务，您需要安装 Studente AWS 跟踪器应用程序。',
     windows: '下载 Windows 版'
-  },
-  header: {
+  },  header: {
     language: '语言',
     about: '关于',
-    license: '许可证'
+    license: '许可证',
+    logout: '退出登录'
   },
   aws: {
     instances: '实例',
