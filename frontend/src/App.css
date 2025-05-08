@@ -33,7 +33,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1001; /* 증가된 z-index 값으로 header가 항상 위에 표시되도록 함 */
   transition: all 0.3s ease;
 }
 
@@ -805,20 +805,61 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-  .interface-controls {
-    grid-template-columns: 1fr;
-    gap: 12px;
+  .mobile-menu-button {
+    display: block;
+    order: 2;
   }
   
-  .interface-buttons {
+  .dashboard-header {
+    flex-wrap: nowrap;
+    position: relative; /* position 변경 */
+  }
+  
+  .header-controls {
+    display: none; /* 기본적으로 숨김 */
+    position: absolute; /* fixed에서 absolute로 변경 */
+    background: linear-gradient(135deg, #1a2634 0%, #232f3e 50%, #324c6e 100%);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 15px;
+    gap: 15px;
+    top: 100%; /* 헤더 바로 아래에 배치 */
+    left: 0;
+    right: 0;
+    z-index: 990; /* 헤더보다 낮은 z-index */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .header-controls.mobile-open {
+    display: flex; /* 표시될 때 flex로 변경 */
+  }
+  
+  .header-actions {
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 8px;
   }
   
-  .interface-button {
+  .page-links {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  .page-links button {
     flex: 1;
-    min-width: 0;
-    padding: 10px 12px;
+  }
+  
+  .language-selector {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .language-dropdown {
+    width: 100%;
+    max-width: 250px;
   }
 }
 
@@ -917,4 +958,45 @@ body {
 
 .clear-console-button:hover {
   background-color: #d32f2f;
+}
+
+/* Responsive styles for header */
+@media (max-width: 992px) {
+  .header-controls {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-wrap: wrap;
+  }
+  
+  .header-controls {
+    order: 2;
+    width: 100%;
+    margin-top: 0; /* 10px에서 0으로 변경하여 공중에 떠 있는 모습을 제거 */
+    justify-content: space-between;
+  }
+  
+  .language-label {
+    display: none;
+  }
+  
+  .language-selector {
+    margin-left: 0;
+  }
+}
+
+/* Animations for connection status */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
 }
