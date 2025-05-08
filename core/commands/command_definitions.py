@@ -109,159 +109,203 @@ async def handle_test(data: dict, client=None) -> dict:
         "service": "test",
         "status": "success",
         "message": "테스트 메시지입니다.",
+        "content": {
+            "data": "dummy text"
+        },
+        "dummy_key": "dummy key",
         "share": True  # 공유 플래그 추가
     }
 
 # ===== 활동 모니터링 명령어 핸들러 =====
-@register_action_handler("startMonitoring")
-@shared_response_handler
-async def handle_start_monitoring(data: dict, client=None) -> dict:
-    """활동 모니터링 시작 요청 처리"""
-    logger.info("활동 모니터링 시작 요청 수신")
+# @register_action_handler("startMonitoring")
+# @shared_response_handler
+# async def handle_start_monitoring(data: dict, client=None) -> dict:
+#     """활동 모니터링 시작 요청 처리"""
+#     logger.info("활동 모니터링 시작 요청 수신")
     
-    try:
-        # 활동 모니터링 모듈 로드
-        from core import activity_monitor
+#     try:
+#         # 활동 모니터링 모듈 로드
+#         from core import activity_monitor
         
-        # 활동 모니터링 시작
-        if not hasattr(activity_monitor, 'is_monitoring_active') or not activity_monitor.is_monitoring_active():
-            # 이미 실행 중인 프로세스가 있으면 강제 종료 후 시작
-            if activity_monitor.is_already_running():
-                activity_monitor.find_and_kill_lock_process()
-                await asyncio.sleep(3)  # 완전히 종료될 시간 제공
+#         # 활동 모니터링 시작
+#         if not hasattr(activity_monitor, 'is_monitoring_active') or not activity_monitor.is_monitoring_active():
+#             # 이미 실행 중인 프로세스가 있으면 강제 종료 후 시작
+#             if activity_monitor.is_already_running():
+#                 activity_monitor.find_and_kill_lock_process()
+#                 await asyncio.sleep(3)  # 완전히 종료될 시간 제공
                 
-            result = activity_monitor.start_monitoring()
-            success = result
-        else:
-            logger.info("활동 모니터링이 이미 실행 중입니다.")
-            success = True
+#             result = activity_monitor.start_monitoring()
+#             success = result
+#         else:
+#             logger.info("활동 모니터링이 이미 실행 중입니다.")
+#             success = True
         
-        # 결과 메시지 생성 및 전송
-        activity_response = {
-            "service": "activity",
-            "status": "started" if success else "error",
-            "message": "활동 모니터링이 시작되었습니다." if success else "활동 모니터링 시작에 실패했습니다."
-        }
+#         # 결과 메시지 생성 및 전송
+#         activity_response = {
+#             "service": "activity",
+#             "status": "started" if success else "error",
+#             "message": "활동 모니터링이 시작되었습니다." if success else "활동 모니터링 시작에 실패했습니다."
+#         }
         
-        await broadcast_to_clients(activity_response, exclude_client=client)
-        return {"status": "success", "message": "모니터링이 시작되었습니다.", "share": True} if success else {"status": "error", "message": "모니터링 시작에 실패했습니다."}
+#         await broadcast_to_clients(activity_response, exclude_client=client)
+#         return {"status": "success", "message": "모니터링이 시작되었습니다.", "share": True} if success else {"status": "error", "message": "모니터링 시작에 실패했습니다."}
         
-    except Exception as e:
-        logger.error(f"활동 모니터링 시작 중 오류: {e}", exc_info=True)
-        return {"status": "error", "message": f"활동 모니터링 시작 중 오류가 발생했습니다: {str(e)}"}
+#     except Exception as e:
+#         logger.error(f"활동 모니터링 시작 중 오류: {e}", exc_info=True)
+#         return {"status": "error", "message": f"활동 모니터링 시작 중 오류가 발생했습니다: {str(e)}"}
 
 # ===== AWS EC2 명령어 핸들러 =====
-@register_handler("startInstance", "action")
-@register_handler("AWS_EC2_START_INSTANCE", "type")
-@shared_response_handler
-async def handle_start_instance(data: dict, client=None) -> dict:
-    """EC2 인스턴스 시작 요청 처리"""
-    # 메시지 형식에 따라 인스턴스 ID 추출
-    if "instanceId" in data:
-        instance_id = data.get("instanceId")
-    elif "content" in data and "instanceId" in data["content"]:
-        instance_id = data["content"]["instanceId"]
-    else:
-        return {"status": "error", "message": "인스턴스 ID가 필요합니다."}
+# @register_handler("startInstance", "action")
+# @register_handler("AWS_EC2_START_INSTANCE", "type")
+# @shared_response_handler
+# async def handle_start_instance(data: dict, client=None) -> dict:
+#     """EC2 인스턴스 시작 요청 처리"""
+#     # 메시지 형식에 따라 인스턴스 ID 추출
+#     if "instanceId" in data:
+#         instance_id = data.get("instanceId")
+#     elif "content" in data and "instanceId" in data["content"]:
+#         instance_id = data["content"]["instanceId"]
+#     else:
+#         return {"status": "error", "message": "인스턴스 ID가 필요합니다."}
     
-    region = data.get("region", None)
-    logger.info(f"EC2 인스턴스 시작 요청: {instance_id}, 리전: {region}")
+#     region = data.get("region", None)
+#     logger.info(f"EC2 인스턴스 시작 요청: {instance_id}, 리전: {region}")
     
-    # EC2 인스턴스 시작
-    success = aws_services.start_ec2_instance(instance_id, region)
+#     # EC2 인스턴스 시작
+#     success = aws_services.start_ec2_instance(instance_id, region)
     
-    if success:
-        # 성공 시 최신 EC2 인스턴스 정보 조회
-        instances = aws_services.list_ec2_instances(region)
-        return {
-            "service": "ec2",
-            "instances": instances,
-            "status": "updated",
-            "message": f"인스턴스 {instance_id}가 시작되었습니다.",
-            "share": True  # 공유 플래그 추가
-        }
-    else:
-        return {"status": "error", "message": f"인스턴스 {instance_id} 시작 실패"}
+#     if success:
+#         # 성공 시 최신 EC2 인스턴스 정보 조회
+#         instances = aws_services.list_ec2_instances(region)
+#         return {
+#             "service": "ec2",
+#             "instances": instances,
+#             "status": "updated",
+#             "message": f"인스턴스 {instance_id}가 시작되었습니다.",
+#             "share": True  # 공유 플래그 추가
+#         }
+#     else:
+#         return {"status": "error", "message": f"인스턴스 {instance_id} 시작 실패"}
 
-@register_handler("stopInstance", "action")
-@register_handler("AWS_EC2_STOP_INSTANCE", "type")
-@shared_response_handler
-async def handle_stop_instance(data: dict, client=None) -> dict:
-    """EC2 인스턴스 중지 요청 처리"""
-    # 메시지 형식에 따라 인스턴스 ID 추출
-    if "instanceId" in data:
-        instance_id = data.get("instanceId")
-    elif "content" in data and "instanceId" in data["content"]:
-        instance_id = data["content"]["instanceId"]
-    else:
-        return {"status": "error", "message": "인스턴스 ID가 필요합니다."}
+# @register_handler("stopInstance", "action")
+# @register_handler("AWS_EC2_STOP_INSTANCE", "type")
+# @shared_response_handler
+# async def handle_stop_instance(data: dict, client=None) -> dict:
+#     """EC2 인스턴스 중지 요청 처리"""
+#     # 메시지 형식에 따라 인스턴스 ID 추출
+#     if "instanceId" in data:
+#         instance_id = data.get("instanceId")
+#     elif "content" in data and "instanceId" in data["content"]:
+#         instance_id = data["content"]["instanceId"]
+#     else:
+#         return {"status": "error", "message": "인스턴스 ID가 필요합니다."}
     
-    region = data.get("region", None)
-    logger.info(f"EC2 인스턴스 중지 요청: {instance_id}, 리전: {region}")
+#     region = data.get("region", None)
+#     logger.info(f"EC2 인스턴스 중지 요청: {instance_id}, 리전: {region}")
     
-    # EC2 인스턴스 중지
-    success = aws_services.stop_ec2_instance(instance_id, region)
+#     # EC2 인스턴스 중지
+#     success = aws_services.stop_ec2_instance(instance_id, region)
     
-    if success:
-        # 성공 시 최신 EC2 인스턴스 정보 조회
-        instances = aws_services.list_ec2_instances(region)
-        return {
-            "service": "ec2",
-            "instances": instances,
-            "status": "updated",
-            "message": f"인스턴스 {instance_id}가 중지되었습니다.",
-            "share": True  # 공유 플래그 추가
-        }
-    else:
-        return {"status": "error", "message": f"인스턴스 {instance_id} 중지 실패"}
+#     if success:
+#         # 성공 시 최신 EC2 인스턴스 정보 조회
+#         instances = aws_services.list_ec2_instances(region)
+#         return {
+#             "service": "ec2",
+#             "instances": instances,
+#             "status": "updated",
+#             "message": f"인스턴스 {instance_id}가 중지되었습니다.",
+#             "share": True  # 공유 플래그 추가
+#         }
+#     else:
+#         return {"status": "error", "message": f"인스턴스 {instance_id} 중지 실패"}
 
 # ===== 데이터 조회 명령어 핸들러 =====
-@register_action_handler("getAll")
-@shared_response_handler
-async def handle_get_all(data: dict, client=None) -> dict:
-    """모든 AWS 서비스 데이터 요청 처리"""
-    region = None
-    logger.info(f"모든 AWS 서비스 데이터 요청 - 리전: {region}")
+# @register_action_handler("getAll")
+# @shared_response_handler
+# async def handle_get_all(data: dict, client=None) -> dict:
+#     """모든 AWS 서비스 데이터 요청 처리"""
+#     region = None
+#     logger.info(f"모든 AWS 서비스 데이터 요청 - 리전: {region}")
     
-    try:
-        # EC2 인스턴스 목록
-        instances = aws_services.list_ec2_instances(region)
-        ec2_response = {
-            "service": "ec2",
-            "instances": instances
-        }
-        await broadcast_to_clients(ec2_response, exclude_client=client)
+#     try:
+#         # EC2 인스턴스 목록
+#         instances = aws_services.list_ec2_instances(region)
+#         ec2_response = {
+#             "service": "ec2",
+#             "instances": instances
+#         }
+#         await broadcast_to_clients(ec2_response, exclude_client=client)
         
-        # ECS 클러스터 목록
-        clusters = aws_services.list_ecs_clusters(region)
-        ecs_response = {
-            "service": "ecs",
-            "clusters": clusters
-        }
-        await broadcast_to_clients(ecs_response, exclude_client=client)
+#         # ECS 클러스터 목록
+#         clusters = aws_services.list_ecs_clusters(region)
+#         ecs_response = {
+#             "service": "ecs",
+#             "clusters": clusters
+#         }
+#         await broadcast_to_clients(ecs_response, exclude_client=client)
         
-        # EKS 클러스터 목록
-        eks_clusters = aws_services.list_eks_clusters(region)
-        eks_response = {
-            "service": "eks",
-            "clusters": eks_clusters
-        }
-        await broadcast_to_clients(eks_response, exclude_client=client)
+#         # EKS 클러스터 목록
+#         eks_clusters = aws_services.list_eks_clusters(region)
+#         eks_response = {
+#             "service": "eks",
+#             "clusters": eks_clusters
+#         }
+#         await broadcast_to_clients(eks_response, exclude_client=client)
         
-        # 활동 로그
-        activity_response = {
-            "service": "activity",
-            "message": "모든 AWS 서비스 데이터가 로드되었습니다."
-        }
-        await broadcast_to_clients(activity_response, exclude_client=client)
+#         # 활동 로그
+#         activity_response = {
+#             "service": "activity",
+#             "message": "모든 AWS 서비스 데이터가 로드되었습니다."
+#         }
+#         await broadcast_to_clients(activity_response, exclude_client=client)
         
-        return {"status": "success", "message": "모든 데이터를 요청했습니다.", "share": True}
+#         return {"status": "success", "message": "모든 데이터를 요청했습니다.", "share": True}
         
-    except Exception as e:
-        logger.error(f"AWS 데이터 조회 중 오류: {e}", exc_info=True)
-        return {"status": "error", "message": f"AWS 데이터 조회 중 오류가 발생했습니다: {str(e)}"}
+#     except Exception as e:
+#         logger.error(f"AWS 데이터 조회 중 오류: {e}", exc_info=True)
+#         return {"status": "error", "message": f"AWS 데이터 조회 중 오류가 발생했습니다: {str(e)}"}
 
-@register_action_handler("refresh")
+
+
+# ===== 활동 모니터링 메시지 핸들러 =====
+# for activity_type in [
+#     message_format.MessageType.KEYBOARD_ACTIVITY,
+#     message_format.MessageType.MOUSE_MOVEMENT,
+#     message_format.MessageType.MOUSE_CLICK,
+#     message_format.MessageType.SCREEN_CHANGE,
+#     message_format.MessageType.ACTIVE_WINDOW,
+#     message_format.MessageType.AUDIO_PLAYBACK,
+#     message_format.MessageType.USER_ACTIVITY
+# ]:
+#     # 각 활동 유형에 대한 핸들러 등록 (action 기반으로 통합)
+#     @register_action_handler(activity_type)
+#     @shared_response_handler
+#     async def handle_activity_message(data: dict, client=None) -> dict:
+#         """활동 모니터링 관련 메시지 처리"""
+#         await broadcast_to_clients(data, exclude_client=client)
+#         return {"status": "success", "message": "활동 메시지가 전송되었습니다.", "share": True}
+
+# # AWS EC2 목록 요청 처리 (action 기반으로 통합)
+# @register_action_handler(message_format.MessageType.AWS_EC2_LIST)
+# @shared_response_handler
+# async def handle_aws_ec2_list(data: dict, client=None) -> dict:
+#     """EC2 인스턴스 목록 요청 처리"""
+#     region = None
+    
+#     instances = aws_services.list_ec2_instances(region)
+#     response = message_format.create_message(
+#         message_format.MessageType.AWS_EC2_LIST, 
+#         {"instances": instances}
+#     )
+#     # 응답에 action 키를 추가하여 일관성 유지
+#     if "type" in response and "action" not in response:
+#         response["action"] = response["type"]
+        
+#     await broadcast_to_clients(response, exclude_client=client)
+#     return {"status": "success", "share": True}
+
+
+@register_action_handler("refresh_service")
 @shared_response_handler
 async def handle_refresh(data: dict, client=None) -> dict:
     """특정 서비스 데이터 새로고침 요청 처리"""
@@ -309,40 +353,3 @@ async def handle_refresh(data: dict, client=None) -> dict:
     except Exception as e:
         logger.error(f"{service.upper()} 데이터 조회 중 오류: {e}", exc_info=True)
         return {"status": "error", "message": f"{service.upper()} 데이터 조회 중 오류가 발생했습니다: {str(e)}"}
-
-# ===== 활동 모니터링 메시지 핸들러 =====
-for activity_type in [
-    message_format.MessageType.KEYBOARD_ACTIVITY,
-    message_format.MessageType.MOUSE_MOVEMENT,
-    message_format.MessageType.MOUSE_CLICK,
-    message_format.MessageType.SCREEN_CHANGE,
-    message_format.MessageType.ACTIVE_WINDOW,
-    message_format.MessageType.AUDIO_PLAYBACK,
-    message_format.MessageType.USER_ACTIVITY
-]:
-    # 각 활동 유형에 대한 핸들러 등록 (action 기반으로 통합)
-    @register_action_handler(activity_type)
-    @shared_response_handler
-    async def handle_activity_message(data: dict, client=None) -> dict:
-        """활동 모니터링 관련 메시지 처리"""
-        await broadcast_to_clients(data, exclude_client=client)
-        return {"status": "success", "message": "활동 메시지가 전송되었습니다.", "share": True}
-
-# AWS EC2 목록 요청 처리 (action 기반으로 통합)
-@register_action_handler(message_format.MessageType.AWS_EC2_LIST)
-@shared_response_handler
-async def handle_aws_ec2_list(data: dict, client=None) -> dict:
-    """EC2 인스턴스 목록 요청 처리"""
-    region = None
-    
-    instances = aws_services.list_ec2_instances(region)
-    response = message_format.create_message(
-        message_format.MessageType.AWS_EC2_LIST, 
-        {"instances": instances}
-    )
-    # 응답에 action 키를 추가하여 일관성 유지
-    if "type" in response and "action" not in response:
-        response["action"] = response["type"]
-        
-    await broadcast_to_clients(response, exclude_client=client)
-    return {"status": "success", "share": True}
