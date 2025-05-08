@@ -79,11 +79,7 @@ export class WebSocketMessageFormatter {
         
       case CommandType.REFRESH_SERVICE:
         // 서비스 타입에 따라 적절한 메시지 형식 설정
-        const serviceActionMap: Record<string, string> = {
-          'ec2': MessageType.AWS_EC2_LIST,
-          'ecs': MessageType.AWS_ECS_LIST, 
-          'eks': MessageType.AWS_EKS_LIST
-        };
+        // Removed serviceActionMap as it's not used
         
         messageToSend = {
           id: `req-${Date.now()}`,

@@ -5,7 +5,7 @@
 import type { IWebSocketClient } from '../types/socket';
 import { WebSocketConnection } from './WebSocketConnection';
 import { WebSocketMessageFormatter } from './WebSocketMessageFormatter';
-import { CommandType } from '../constants/socketTypes';
+// import { WS_CONFIG } from '../constants/socketTypes';
 
 /**
  * WebSocket 서비스 클래스

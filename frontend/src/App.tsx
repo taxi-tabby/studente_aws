@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import { WebSocketClient, ServiceType } from './utils/WebSocketClient'
+import { WebSocketClient } from './utils/WebSocketClient'
 import ActivityMonitor from './components/ActivityMonitor'
 import EC2Instances from './components/EC2Instances'
 import ECSClusters from './components/ECSClusters'
