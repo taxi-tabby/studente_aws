@@ -103,7 +103,7 @@ def list_ec2_instances(region=None):
         except ClientError as e:
             logger.error(f"EC2 인스턴스 목록 조회 중 오류 발생 (리전: {current_region}): {e}")
     
-    print("EC2 인스턴스 목록:", instances)
+    # print("EC2 인스턴스 목록:", instances)
     
     return instances
 
