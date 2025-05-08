@@ -106,7 +106,6 @@ async def handle_test(data: dict, client=None) -> dict:
     
     # share 플래그를 추가하여 모든 클라이언트에게 공유
     return {
-        "action": "test",
         "service": "test",
         "status": "success",
         "message": "테스트 메시지입니다.",
