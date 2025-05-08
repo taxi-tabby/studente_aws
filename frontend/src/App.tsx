@@ -37,6 +37,15 @@ function App() {
 	// Initialize i18n hooks
 	const { t, i18n } = useTranslation();
 
+	// 비밀번호 관련 상태
+	const [password, setPassword] = useState<string>('');
+	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+	const [passwordError, setPasswordError] = useState<string | null>(null);
+	const [isInitialSetup, setIsInitialSetup] = useState<boolean>(false); // 최초 비밀번호 설정 여부
+	const [authKey, setAuthKey] = useState<string | null>(null); // 서버에서 발급받은 인증 키
+	const [newPassword, setNewPassword] = useState<string>(''); // 신규 비밀번호 설정
+	const [confirmPassword, setConfirmPassword] = useState<string>(''); // 비밀번호 확인
+
 	// State for data received from WebSocket
 	const [activityStatus, setActivityStatus] = useState<ActivityStatus>({
 		keyboard: false,
@@ -128,14 +137,22 @@ function App() {
 		
 		// 타이머 값도 초기화
 		setTimerValue(0);
-	};
-
-	useEffect(() => {
+	};	useEffect(() => {
 		// Initialize language from localStorage or detect browser language
 		const savedLanguage = localStorage.getItem('language') || detectBrowserLanguage();
 		setCurrentLanguage(savedLanguage);
 		i18n.changeLanguage(savedLanguage);
 
+		// 저장된 인증 키 확인
+		const savedAuthKey = sessionStorage.getItem('authKey');
+		if (savedAuthKey) {
+			setAuthKey(savedAuthKey);
+			// 인증 키 유효성 검사는 서버 연결 후 수행
+		}
+
+		// 기본적으로는 인증 안됨 상태로 시작 (서버에서 확인 필요)
+		setIsAuthenticated(false);
+		
 		// 초기 화면 표시를 위해 즉시 샘플 데이터 로드
 		loadMockData();
 		
@@ -155,17 +172,55 @@ function App() {
 		
 		// Store the client in ref for later use
 		webSocketClientRef.current = webSocketClient;
-		
-		// Connect to the WebSocket server
+				// Connect to the WebSocket server
 		webSocketClient.connect();
 		setConnectionStatus('connecting');
-
+		
+		// 연결 시도 횟수를 추적하기 위한 변수
+		let connectionAttempts = 0;
+		
 		// WebSocket 연결 상태 주기적 체크
 		const connectionCheck = setInterval(() => {
 			// getConnectionStatus 메서드를 통해 연결 상태 확인
 			if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
 				setConnectionStatus('connected');
-				clearInterval(connectionCheck);
+				
+				// 연결 성공 시 비밀번호 상태 확인 요청
+				webSocketClientRef.current.send({
+					type: "PASSWORD_STATUS_CHECK"
+				});
+				
+				// 저장된 인증 키가 있다면 검증 요청
+				const savedAuthKey = sessionStorage.getItem('authKey');
+				if (savedAuthKey) {
+					webSocketClientRef.current.send({
+						type: "VERIFY_AUTH_KEY",
+						content: {
+							authKey: savedAuthKey
+						}
+					});
+				}
+				
+				// 10초 동안 응답이 없으면 임시로 초기 설정 모드 활성화
+				// 실제 서버 구현 시에는 제거해야 함
+				const responseTimeout = setTimeout(() => {
+					if (!isAuthenticated && !isInitialSetup) {
+						console.log("서버에서 응답이 없어 임시로 초기 설정 화면 표시");
+						setIsInitialSetup(true);
+					}
+					clearTimeout(responseTimeout);
+				}, 10000);
+						clearInterval(connectionCheck);
+			} else {
+				// 10초 이상 연결되지 않으면 임시로 초기 설정 모드 활성화 (개발 목적)
+				// connectionCheck는 setInterval의 ID 값으로 timeout 속성이 없음
+				// 연결 시도 횟수를 별도 변수로 추적하도록 수정
+				connectionAttempts++;
+				if (connectionAttempts > 10) {
+					console.log("서버 연결 실패, 임시 초기 설정 화면 표시");
+					setIsInitialSetup(true);
+					clearInterval(connectionCheck);
+				}
 			}
 		}, 1000);
 
@@ -197,7 +252,6 @@ function App() {
 	useEffect(() => {
 		localStorage.setItem('language', currentLanguage);
 	}, [currentLanguage]);
-
 	// Handle messages received from WebSocket
 	const handleWebSocketMessage = (message: WebSocketMessage) => {
 		// console.log("WebSocket 메시지 수신:", message);
@@ -209,6 +263,55 @@ function App() {
 			const updatedMessages = [...prevMessages, message];
 			return updatedMessages.slice(Math.max(0, updatedMessages.length - MAX_MESSAGES));
 		});
+
+		// 비밀번호 초기 설정 필요 여부 확인
+		if (message.type === "PASSWORD_STATUS") {
+			if (message.content?.isInitialSetup) {
+				// 비밀번호가 아직 설정되지 않은 상태
+				setIsInitialSetup(true);
+			} else {
+				// 비밀번호가 이미 설정되어 있는 상태
+				setIsInitialSetup(false);
+			}
+			return;
+		}
+
+		// 비밀번호 검증 응답 처리
+		if (message.type === "PASSWORD_VERIFY_RESPONSE") {
+			if (message.content?.success) {
+				setIsAuthenticated(true);
+				setPasswordError(null);
+				
+				// 서버에서 발급한 인증 키 저장
+				if (message.content?.authKey) {
+					setAuthKey(message.content.authKey);
+					// 로컬에 인증 키 저장 (실제 구현에서는 세션이나 안전한 쿠키 사용 필요)
+					sessionStorage.setItem('authKey', message.content.authKey);
+				}
+			} else {
+				setPasswordError(message.content?.error || t('password.error.invalid', '잘못된 비밀번호입니다.'));
+			}
+			return;
+		}
+		
+		// 비밀번호 설정 응답 처리
+		if (message.type === "PASSWORD_CREATE_RESPONSE") {
+			if (message.content?.success) {
+				setIsAuthenticated(true);
+				setIsInitialSetup(false);
+				setPasswordError(null);
+				
+				// 서버에서 발급한 인증 키 저장
+				if (message.content?.authKey) {
+					setAuthKey(message.content.authKey);
+					// 로컬에 인증 키 저장 (실제 구현에서는 세션이나 안전한 쿠키 사용 필요)
+					sessionStorage.setItem('authKey', message.content.authKey);
+				}
+			} else {
+				setPasswordError(message.content?.error || t('password.error.setup', '비밀번호 설정 중 오류가 발생했습니다.'));
+			}
+			return;
+		}
 		
 		// 서비스 타입에 따라 적절한 데이터 처리
 		if (message.service === "ec2" && message.instances) {
@@ -375,9 +478,93 @@ function App() {
 			// 	}
 			// }, 2000);
 		}
+	};	// 비밀번호 검증 함수
+	const verifyPassword = () => {
+		if (password.trim() === '') {
+			setPasswordError(t('password.error.empty', '비밀번호를 입력해주세요.'));
+			return;
+		}
+		
+		// 소켓을 통한 검증
+		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			// 소켓이 연결된 경우 서버로 검증 요청
+			webSocketClientRef.current.send({
+				type: "VERIFY_PASSWORD",
+				content: {
+					password: password
+				}
+			});
+			
+			// 요청을 보낸 후 로딩 상태 표시를 할 수 있음
+			setPasswordError(t('password.verifying', '비밀번호 확인 중...'));
+		} else {
+			// 소켓 연결이 필요하다는 메시지 표시 (연결 재시도 추가)
+			setPasswordError(t('password.error.connectionRequired', '서버 연결이 필요합니다. 연결 중입니다...'));
+			
+			// 연결 재시도
+			handleReconnect();
+			
+			// 3초 후에 연결 상태 다시 확인
+			setTimeout(() => {
+				if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+					// 연결되었으면 비밀번호 확인 다시 시도
+					setPasswordError(null);
+				} else {
+					// 여전히 연결되지 않았으면 오류 메시지 업데이트
+					setPasswordError(t('password.error.connectionFailed', '서버에 연결할 수 없습니다. 트래커 애플리케이션이 실행 중인지 확인하세요.'));
+				}
+			}, 3000);
+		}
 	};
-
-
+		// 신규 비밀번호 설정 함수
+	const createPassword = () => {
+		// 입력 값 검증
+		if (newPassword.trim() === '') {
+			setPasswordError(t('password.error.empty', '비밀번호를 입력해주세요.'));
+			return;
+		}
+		
+		if (newPassword !== confirmPassword) {
+			setPasswordError(t('password.error.mismatch', '비밀번호가 일치하지 않습니다.'));
+			return;
+		}
+		
+		// 비밀번호 복잡성 검증 (최소 6자 이상)
+		if (newPassword.length < 6) {
+			setPasswordError(t('password.error.tooShort', '비밀번호는 최소 6자 이상이어야 합니다.'));
+			return;
+		}
+		
+		// 소켓을 통한 비밀번호 설정
+		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			webSocketClientRef.current.send({
+				type: "CREATE_PASSWORD",
+				content: {
+					password: newPassword
+				}
+			});
+			
+			// 요청을 보낸 후 로딩 상태 표시
+			setPasswordError(t('password.creating', '비밀번호 설정 중...'));
+		} else {
+			// 소켓 연결이 필요하다는 메시지 표시 (연결 재시도 추가)
+			setPasswordError(t('password.error.connectionRequired', '서버 연결이 필요합니다. 연결 중입니다...'));
+			
+			// 연결 재시도
+			handleReconnect();
+			
+			// 3초 후에 연결 상태 다시 확인
+			setTimeout(() => {
+				if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+					// 연결되었으면 비밀번호 확인 다시 시도
+					setPasswordError(null);
+				} else {
+					// 여전히 연결되지 않았으면 오류 메시지 업데이트
+					setPasswordError(t('password.error.connectionFailed', '서버에 연결할 수 없습니다. 트래커 애플리케이션이 실행 중인지 확인하세요.'));
+				}
+			}, 3000);
+		}
+	};
 
 	// EC2 인스턴스 시작 처리
 	const handleStartEC2Instance = (instanceId: string) => {
@@ -478,6 +665,80 @@ function App() {
 	// Mobile menu toggle function
 	const toggleMobileMenu = () => {
 		setIsMobileMenuOpen(!isMobileMenuOpen);
+	};	// 로그아웃 함수
+	const handleLogout = () => {
+		setIsAuthenticated(false);
+		setAuthKey(null);
+		sessionStorage.removeItem('authKey');
+		
+		// 서버에 로그아웃 알림 (필요한 경우)
+		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			webSocketClientRef.current.send({
+				type: "LOGOUT"
+			});
+		}
+	};
+	
+	// 헤더에 로그아웃 버튼 텍스트 번역 추가
+	const logout = t('header.logout', '로그아웃');
+	// 개발 환경에서 임시 인증 처리 (테스트 목적) - 실제 서버 구현 시 제거 필요
+	const handleDevAuth = () => {
+		// 임시 인증 키 생성 (실제 서버 구현에서는 서버에서 발급)
+		const tempAuthKey = 'dev-temp-auth-key-' + new Date().getTime();
+		
+		// 개발 환경에서 인증 상태 임시 설정
+		if (isInitialSetup) {
+			// 비밀번호 설정 성공 시뮬레이션
+			setIsAuthenticated(true);
+			setIsInitialSetup(false);
+			setAuthKey(tempAuthKey);
+			// 세션 스토리지에 저장 (새로고침 시에도 유지)
+			sessionStorage.setItem('authKey', tempAuthKey);
+			console.log('개발 환경: 비밀번호 설정 성공 시뮬레이션');
+			setPasswordError(null); // 오류 메시지 초기화
+		} else {
+			// 비밀번호 검증 성공 시뮬레이션
+			setIsAuthenticated(true);
+			setAuthKey(tempAuthKey);
+			// 세션 스토리지에 저장 (새로고침 시에도 유지)
+			sessionStorage.setItem('authKey', tempAuthKey);
+			console.log('개발 환경: 비밀번호 검증 성공 시뮬레이션');
+			setPasswordError(null); // 오류 메시지 초기화
+		}
+		
+		// 콘솔 메시지에 로그 추가
+		setSocketMessages(prev => [...prev, {
+			type: 'DEV_AUTH',
+			content: {
+				action: isInitialSetup ? 'create_password' : 'verify_password',
+				timestamp: new Date().toISOString(),
+				note: '개발 환경에서의 임시 인증'
+			},
+			timestamp: new Date().toISOString()
+		}]);
+	};
+		// 개발 환경에서 비밀번호 설정 상태 토글 (테스트 목적) - 실제 서버 구현 시 제거 필요
+	const toggleInitialSetup = () => {
+		setIsInitialSetup(!isInitialSetup);
+		// 화면 전환 시 상태 초기화
+		setPassword('');
+		setNewPassword('');
+		setConfirmPassword('');
+		setPasswordError(null);
+		
+		// 콘솔에 로그 기록
+		console.log(`개발 환경: 비밀번호 설정 상태 변경 - ${!isInitialSetup ? '초기 설정 필요' : '이미 설정됨'}`);
+		
+		// 콘솔 메시지에도 기록
+		setSocketMessages(prev => [...prev, {
+			type: 'DEV_MODE',
+			content: {
+				action: 'toggle_setup_mode',
+				mode: !isInitialSetup ? 'setup' : 'login',
+				timestamp: new Date().toISOString()
+			},
+			timestamp: new Date().toISOString()
+		}]);
 	};
 
 	return (
@@ -524,15 +785,18 @@ function App() {
 								))}
 							</select>
 						</div>
-						
-						{/* About/License 페이지 링크 - Connect to modal functions */}
+								{/* About/License 페이지 링크 - Connect to modal functions */}
 						<div className="page-links">
 							<button className="about-button" onClick={openAboutModal}>
 								{t('header.about')}
 							</button>
 							<button className="license-button" onClick={openLicenseModal}>
 								{t('header.license')}
-							</button>
+							</button>							{isAuthenticated && (
+								<button className="logout-button" onClick={handleLogout}>
+									{t('header.logout', '로그아웃')}
+								</button>
+							)}
 						</div>
 					</div>
 				</header>
@@ -555,196 +819,300 @@ function App() {
 							</div>
 						</div>
 					</div>
+				)}				{/* 비밀번호 입력 또는 설정 화면 - 인증되지 않았을 때만 표시 */}
+				{!isAuthenticated && (
+					<div className="password-container">
+						<div className="password-content">
+							{isInitialSetup ? (
+								// 최초 비밀번호 설정 화면
+								<>
+									<h3>{t('password.setup.title', '비밀번호 설정')}</h3>
+									<p>{t('password.setup.description', '대시보드 접근을 위한 비밀번호를 설정하세요.')}</p>
+									<div className="password-setup-form">
+										<div className="password-input-row">
+											<label htmlFor="new-password">{t('password.setup.new', '새 비밀번호')}</label>
+											<input 
+												id="new-password"
+												type="password"
+												className="password-input"
+												value={newPassword}
+												onChange={(e) => setNewPassword(e.target.value)}
+												placeholder={t('password.setup.newPlaceholder', '새 비밀번호 입력 (6자 이상)')}
+											/>
+										</div>
+										<div className="password-input-row">
+											<label htmlFor="confirm-password">{t('password.setup.confirm', '비밀번호 확인')}</label>
+											<input 
+												id="confirm-password"
+												type="password"
+												className="password-input"
+												value={confirmPassword}
+												onChange={(e) => setConfirmPassword(e.target.value)}
+												placeholder={t('password.setup.confirmPlaceholder', '비밀번호 재입력')}
+												onKeyPress={(e) => e.key === 'Enter' && createPassword()}
+											/>
+										</div>
+										<button 
+											className="password-submit-button"
+											onClick={createPassword}
+										>
+											{t('password.setup.submit', '비밀번호 설정')}
+										</button>										{passwordError && <p className="password-error">{passwordError}</p>}
+										
+										{/* 개발 도구 - 서버 연결 상태에 따라 표시 여부 결정 */}
+										{connectionStatus === 'connected' && (
+											<div className="dev-tools">
+												<div className="dev-buttons">
+													<button 
+														className="dev-toggle-button"
+														onClick={toggleInitialSetup}
+													>
+														화면 전환 ({isInitialSetup ? '로그인 화면으로' : '초기 설정 화면으로'})
+													</button>
+												</div>
+											</div>
+										)}
+									</div>
+								</>
+							) : (
+								// 기존 비밀번호 입력 화면
+								<>
+									<h3>{t('password.title', '접근 비밀번호')}</h3>
+									<p>{t('password.description', '대시보드에 접근하려면 비밀번호를 입력하세요.')}</p>
+									<div className="password-input-group">
+										<input 
+											type="password"
+											className="password-input"
+											value={password}
+											onChange={(e) => setPassword(e.target.value)}
+											placeholder={t('password.placeholder', '비밀번호 입력')}
+											onKeyPress={(e) => e.key === 'Enter' && verifyPassword()}
+										/>
+										<button 
+											className="password-submit-button"
+											onClick={verifyPassword}
+										>
+											{t('password.submit', '확인')}
+										</button>
+									</div>									{passwordError && <p className="password-error">{passwordError}</p>}									{/* 서버 연결 상태 */}
+									<div className="connection-info">
+										<span>서버 상태: <strong className={connectionStatus}>{connectionStatus === 'connected' ? '연결됨' : connectionStatus === 'connecting' ? '연결 중...' : '연결 안됨'}</strong></span>
+										{connectionStatus !== 'connected' && (
+											<button className="connection-retry-button" onClick={handleReconnect}>
+												재연결 시도
+											</button>
+										)}
+									</div>
+									
+									{/* 개발 도구 - 서버 연결 상태에 따라 표시 여부 결정 */}
+									{connectionStatus === 'connected' && (
+										<div className="dev-tools">
+											<div className="dev-buttons">
+												<button 
+													className="dev-toggle-button"
+													onClick={toggleInitialSetup}
+												>
+													화면 전환 ({isInitialSetup ? '로그인 화면으로' : '초기 설정 화면으로'})
+												</button>
+											</div>
+										</div>
+									)}
+								</>
+							)}
+						</div>
+					</div>
 				)}
 
-				<main className="dashboard-content">
-					{/* 모든 컴포넌트에 연결 상태 전달 */}
-					<ActivityMonitor 
-						activityStatus={activityStatus} 
-						isConnected={connectionStatus === 'connected'} 
-					/>
-					
-					<Timer 
-						value={timerValue} 
-						maxValue={maxTimerValue} 
-						isActive={isUserActive || activityStatus.keyboard || activityStatus.mouseMovement || activityStatus.mouseClick || activityStatus.audio}
-						isConnected={connectionStatus === 'connected'} 
-					/>
+				{/* 메인 대시보드 콘텐츠 - 인증된 경우에만 표시 */}
+				{isAuthenticated && (
+					<main className="dashboard-content">
+						{/* 모든 컴포넌트에 연결 상태 전달 */}
+						<ActivityMonitor 
+							activityStatus={activityStatus} 
+							isConnected={connectionStatus === 'connected'} 
+						/>
+						
+						<Timer 
+							value={timerValue} 
+							maxValue={maxTimerValue} 
+							isActive={isUserActive || activityStatus.keyboard || activityStatus.mouseMovement || activityStatus.mouseClick || activityStatus.audio}
+							isConnected={connectionStatus === 'connected'} 
+						/>
 
-					{/* Control Panel */}
-					<div className={`control-panel ${connectionStatus !== 'connected' ? 'disconnected' : ''}`}>
-						<div className="control-panel-container">
-							<div className="control-panel-header">
-								<h3>{t('controlPanel.title', 'Control Panel')}</h3>
-								{connectionStatus !== 'connected' && (
-									<span className="control-panel-connection-warning">({t('connection.disconnected')})</span>
-								)}
-							</div>
-							
-							<div className="control-panel-grid">
-								{/* Session Time Control */}
-								<div className="control-panel-section">
-									<h4>{t('controlPanel.sessionSettings', 'Session Settings')}</h4>
-									<div className="control-group">
-										<label htmlFor="max-session-time">{t('controlPanel.maxSessionTime', 'Maximum Session Time')}</label>
-										<div className="input-with-unit">
+						{/* Control Panel */}
+						<div className={`control-panel ${connectionStatus !== 'connected' ? 'disconnected' : ''}`}>
+							<div className="control-panel-container">
+								<div className="control-panel-header">
+									<h3>{t('controlPanel.title', 'Control Panel')}</h3>
+									{connectionStatus !== 'connected' && (
+										<span className="control-panel-connection-warning">({t('connection.disconnected')})</span>
+									)}
+								</div>
+								
+								<div className="control-panel-grid">
+									{/* Session Time Control */}
+									<div className="control-panel-section">
+										<h4>{t('controlPanel.sessionSettings', 'Session Settings')}</h4>
+										<div className="control-group">
+											<label htmlFor="max-session-time">{t('controlPanel.maxSessionTime', 'Maximum Session Time')}</label>
+											<div className="input-with-unit">
+												<input 
+													id="max-session-time" 
+													type="number" 
+													className="control-input" 
+													min="5" 
+													max="240" 
+													defaultValue="30" 
+													disabled={connectionStatus !== 'connected'}
+												/>
+												<span className="input-unit">{t('controlPanel.minutes', 'minutes')}</span>
+											</div>
+											<button 
+												className="control-button primary"
+												disabled={connectionStatus !== 'connected'}
+											>
+												{t('controlPanel.apply', 'Apply')}
+											</button>
+										</div>
+									</div>
+									
+									{/* Dashboard Security */}
+									<div className="control-panel-section">
+										<h4>{t('controlPanel.security', 'Dashboard Security')}</h4>
+										<div className="control-group">
+											<label htmlFor="current-password">{t('controlPanel.currentPassword', 'Current Password')}</label>
 											<input 
-												id="max-session-time" 
-												type="number" 
+												id="current-password" 
+												type="password" 
 												className="control-input" 
-												min="5" 
-												max="240" 
-												defaultValue="30" 
+												placeholder="••••••••" 
 												disabled={connectionStatus !== 'connected'}
 											/>
-											<span className="input-unit">{t('controlPanel.minutes', 'minutes')}</span>
 										</div>
-										<button 
-											className="control-button primary"
-											disabled={connectionStatus !== 'connected'}
-										>
-											{t('controlPanel.apply', 'Apply')}
-										</button>
-									</div>
-								</div>
-								
-								{/* Dashboard Security */}
-								<div className="control-panel-section">
-									<h4>{t('controlPanel.security', 'Dashboard Security')}</h4>
-									<div className="control-group">
-										<label htmlFor="current-password">{t('controlPanel.currentPassword', 'Current Password')}</label>
-										<input 
-											id="current-password" 
-											type="password" 
-											className="control-input" 
-											placeholder="••••••••" 
-											disabled={connectionStatus !== 'connected'}
-										/>
-									</div>
-									<div className="control-group">
-										<label htmlFor="new-password">{t('controlPanel.newPassword', 'New Password')}</label>
-										<input 
-											id="new-password" 
-											type="password" 
-											className="control-input" 
-											placeholder="••••••••" 
-											disabled={connectionStatus !== 'connected'}
-										/>
-									</div>
-									<div className="control-group">
-										<label htmlFor="confirm-password">{t('controlPanel.confirmPassword', 'Confirm Password')}</label>
-										<input 
-											id="confirm-password" 
-											type="password" 
-											className="control-input" 
-											placeholder="••••••••" 
-											disabled={connectionStatus !== 'connected'}
-										/>
-										<button 
-											className="control-button primary"
-											disabled={connectionStatus !== 'connected'}
-										>
-											{t('controlPanel.changePassword', 'Change Password')}
-										</button>
-									</div>
-								</div>
-								
-								{/* Activity Monitor Settings */}
-								<div className="control-panel-section">
-									<h4>{t('controlPanel.activitySettings', 'Activity Settings')}</h4>
-									<div className="control-group">
-										<label>{t('controlPanel.monitorSettings', 'Activity Detection')}</label>
-										<div className="checkbox-group">
-											<div className="checkbox-item">
-												<input 
-													id="keyboard-monitor" 
-													type="checkbox" 
-													defaultChecked 
-													disabled={connectionStatus !== 'connected'}
-												/>
-												<label htmlFor="keyboard-monitor">{t('activity.keyboard')}</label>
-											</div>
-											<div className="checkbox-item">
-												<input 
-													id="mouse-movement-monitor" 
-													type="checkbox" 
-													defaultChecked 
-													disabled={connectionStatus !== 'connected'}
-												/>
-												<label htmlFor="mouse-movement-monitor">{t('activity.mouseMovement')}</label>
-											</div>
-											<div className="checkbox-item">
-												<input 
-													id="mouse-click-monitor" 
-													type="checkbox" 
-													defaultChecked 
-													disabled={connectionStatus !== 'connected'}
-												/>
-												<label htmlFor="mouse-click-monitor">{t('activity.mouseClick')}</label>
-											</div>
-											<div className="checkbox-item">
-												<input 
-													id="screen-monitor" 
-													type="checkbox" 
-													defaultChecked 
-													disabled={connectionStatus !== 'connected'}
-												/>
-												<label htmlFor="screen-monitor">{t('activity.screenChange')}</label>
-											</div>
-											<div className="checkbox-item">
-												<input 
-													id="audio-monitor" 
-													type="checkbox" 
-													defaultChecked 
-													disabled={connectionStatus !== 'connected'}
-												/>
-												<label htmlFor="audio-monitor">{t('activity.audio')}</label>
-											</div>
+										<div className="control-group">
+											<label htmlFor="new-password">{t('controlPanel.newPassword', 'New Password')}</label>
+											<input 
+												id="new-password" 
+												type="password" 
+												className="control-input" 
+												placeholder="••••••••" 
+												disabled={connectionStatus !== 'connected'}
+											/>
 										</div>
-										<button 
-											className="control-button primary"
-											disabled={connectionStatus !== 'connected'}
-										>
-											{t('controlPanel.saveSettings', 'Save Settings')}
-										</button>
+										<div className="control-group">
+											<label htmlFor="confirm-password">{t('controlPanel.confirmPassword', 'Confirm Password')}</label>
+											<input 
+												id="confirm-password" 
+												type="password" 
+												className="control-input" 
+												placeholder="••••••••" 
+												disabled={connectionStatus !== 'connected'}
+											/>
+											<button 
+												className="control-button primary"
+												disabled={connectionStatus !== 'connected'}
+											>
+												{t('controlPanel.changePassword', 'Change Password')}
+											</button>
+										</div>
+									</div>
+									
+									{/* Activity Monitor Settings */}
+									<div className="control-panel-section">
+										<h4>{t('controlPanel.activitySettings', 'Activity Settings')}</h4>
+										<div className="control-group">
+											<label>{t('controlPanel.monitorSettings', 'Activity Detection')}</label>
+											<div className="checkbox-group">
+												<div className="checkbox-item">
+													<input 
+														id="keyboard-monitor" 
+														type="checkbox" 
+														defaultChecked 
+														disabled={connectionStatus !== 'connected'}
+													/>
+													<label htmlFor="keyboard-monitor">{t('activity.keyboard')}</label>
+												</div>
+												<div className="checkbox-item">
+													<input 
+														id="mouse-movement-monitor" 
+														type="checkbox" 
+														defaultChecked 
+														disabled={connectionStatus !== 'connected'}
+													/>
+													<label htmlFor="mouse-movement-monitor">{t('activity.mouseMovement')}</label>
+												</div>
+												<div className="checkbox-item">
+													<input 
+														id="mouse-click-monitor" 
+														type="checkbox" 
+														defaultChecked 
+														disabled={connectionStatus !== 'connected'}
+													/>
+													<label htmlFor="mouse-click-monitor">{t('activity.mouseClick')}</label>
+												</div>
+												<div className="checkbox-item">
+													<input 
+														id="screen-monitor" 
+														type="checkbox" 
+														defaultChecked 
+														disabled={connectionStatus !== 'connected'}
+													/>
+													<label htmlFor="screen-monitor">{t('activity.screenChange')}</label>
+												</div>
+												<div className="checkbox-item">
+													<input 
+														id="audio-monitor" 
+														type="checkbox" 
+														defaultChecked 
+														disabled={connectionStatus !== 'connected'}
+													/>
+													<label htmlFor="audio-monitor">{t('activity.audio')}</label>
+												</div>
+											</div>
+											<button 
+												className="control-button primary"
+												disabled={connectionStatus !== 'connected'}
+											>
+												{t('controlPanel.saveSettings', 'Save Settings')}
+											</button>
+										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-					</div>
 
-
-					<div className="aws-services">
-						<EC2Instances 
-							instances={ec2Instances} 
-							onStartInstance={handleStartEC2Instance}
-							onStopInstance={handleStopEC2Instance}
-							isConnected={connectionStatus === 'connected'}
-							webSocketClient={webSocketClientRef.current || undefined}
-						/>
-						<ECSClusters 
-							clusters={ecsClusters} 
-							isConnected={connectionStatus === 'connected'} 
-							webSocketClient={webSocketClientRef.current || undefined}
-						/>
-						<EKSClusters 
-							clusters={eksClusters} 
-							isConnected={connectionStatus === 'connected'} 
-							webSocketClient={webSocketClientRef.current || undefined}
-						/>
-					</div>
-					
-					<div className="console-section">
-						<div className="console-header">
-							<h2>Messages</h2>
+						<div className="aws-services">
+							<EC2Instances 
+								instances={ec2Instances} 
+								onStartInstance={handleStartEC2Instance}
+								onStopInstance={handleStopEC2Instance}
+								isConnected={connectionStatus === 'connected'}
+								webSocketClient={webSocketClientRef.current || undefined}
+							/>
+							<ECSClusters 
+								clusters={ecsClusters} 
+								isConnected={connectionStatus === 'connected'} 
+								webSocketClient={webSocketClientRef.current || undefined}
+							/>
+							<EKSClusters 
+								clusters={eksClusters} 
+								isConnected={connectionStatus === 'connected'} 
+								webSocketClient={webSocketClientRef.current || undefined}
+							/>
 						</div>
-						<WebSocketConsole 
-							messages={socketMessages}
-							isConnected={connectionStatus === 'connected'}
-							onClearMessages={clearSocketMessages}
-						/>
-					</div>
-				</main>
+						
+						<div className="console-section">
+							<div className="console-header">
+								<h2>Messages</h2>
+							</div>
+							<WebSocketConsole 
+								messages={socketMessages}
+								isConnected={connectionStatus === 'connected'}
+								onClearMessages={clearSocketMessages}
+							/>
+						</div>
+					</main>
+				)}
 
 				<footer className="dashboard-footer">
 					<p>Studente AWS &copy; {new Date().getFullYear()} by <i>rkdmf0000@gmail.com</i></p>
