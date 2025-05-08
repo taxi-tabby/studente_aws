@@ -2,6 +2,7 @@ import React from 'react';
 import type { EC2Instance } from '../types/aws';
 import './AWSServices.css';
 import { useTranslation } from 'react-i18next';
+import { WebSocketClient, ServiceType } from '../utils/WebSocketClient';
 
 interface EC2InstancesProps {
   instances: EC2Instance[];
@@ -9,6 +10,7 @@ interface EC2InstancesProps {
   onStartInstance?: (instanceId: string) => void;
   onStopInstance?: (instanceId: string) => void;
   isConnected?: boolean; // 연결 상태 추가
+  webSocketClient?: WebSocketClient; // WebSocketClient 인스턴스 추가
 }
 
 const EC2Instances: React.FC<EC2InstancesProps> = ({ 
@@ -16,19 +18,50 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
   onRefresh, 
   onStartInstance, 
   onStopInstance,
-  isConnected = true // 기본값은 연결된 상태
+  isConnected = true, // 기본값은 연결된 상태
+  webSocketClient // WebSocketClient 인스턴스
 }) => {
   const { t } = useTranslation();
   
   const handleStartInstance = (instanceId: string) => {
+    // 웹소켓 클라이언트가 제공된 경우 직접 명령 체계 활용
+    if (webSocketClient && isConnected) {
+      console.log(`EC2 인스턴스 시작 요청: ${instanceId}`);
+      // webSocketClient.startEC2Instance(instanceId);
+      return;
+    }
+    
+    // 기존 방식 유지 (하위 호환성)
     if (onStartInstance && isConnected) {
       onStartInstance(instanceId);
     }
   };
 
   const handleStopInstance = (instanceId: string) => {
+    // 웹소켓 클라이언트가 제공된 경우 직접 명령 체계 활용
+    if (webSocketClient && isConnected) {
+      console.log(`EC2 인스턴스 중지 요청: ${instanceId}`);
+      // webSocketClient.stopEC2Instance(instanceId);
+      return;
+    }
+    
+    // 기존 방식 유지 (하위 호환성)
     if (onStopInstance && isConnected) {
       onStopInstance(instanceId);
+    }
+  };
+  
+  const handleRefresh = () => {
+    // 웹소켓 클라이언트가 제공된 경우 직접 명령 체계 활용
+    if (webSocketClient && isConnected) {
+      console.log('EC2 서비스 데이터 새로고침 요청');
+      webSocketClient.refreshService(ServiceType.EC2);
+      return;
+    }
+    
+    // 기존 방식 유지 (하위 호환성)
+    if (onRefresh) {
+      onRefresh();
     }
   };
 
@@ -41,7 +74,7 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
         </h2>
         <button 
           className="refresh-button" 
-          onClick={onRefresh}
+          onClick={handleRefresh}
           disabled={!isConnected}
         >
           {t('buttons.refresh')}

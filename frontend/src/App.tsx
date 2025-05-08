@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import { WebSocketClient } from './utils/WebSocketClient'
+import { WebSocketClient, ServiceType } from './utils/WebSocketClient'
 import ActivityMonitor from './components/ActivityMonitor'
 import EC2Instances from './components/EC2Instances'
 import ECSClusters from './components/ECSClusters'
@@ -399,10 +399,8 @@ function App() {
 		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
 			// EC2 인스턴스 목록 요청 (표준 JSON 형식)
 			webSocketClientRef.current.send({
-				type: "AWS_EC2_LIST",
-				content: {
-					region: "ap-northeast-2"
-				}
+				action: "refresh_service",
+				service: "ec2",
 			});
 		} else {
 			// Mock data - empty for now
@@ -414,10 +412,8 @@ function App() {
 		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
 			// ECS 클러스터 목록 요청 (표준 JSON 형식)
 			webSocketClientRef.current.send({
-				type: "AWS_ECS_LIST",
-				content: {
-					region: "ap-northeast-2"
-				}
+				action: "refresh_service",
+				service: "ec2",
 			});
 		} else {
 			// Mock data - empty for now
@@ -429,10 +425,8 @@ function App() {
 		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
 			// EKS 클러스터 목록 요청 (표준 JSON 형식)
 			webSocketClientRef.current.send({
-				type: "AWS_EKS_LIST",
-				content: {
-					region: "ap-northeast-2"
-				}
+				action: "refresh_service",
+				service: "ec2",
 			});
 		} else {
 			// Mock data - empty for now
@@ -668,360 +662,147 @@ function App() {
 						isConnected={connectionStatus === 'connected'} 
 					/>
 
-					{/* Flexible interface for various inputs and buttons */}
-					{/* <div className={`flexible-interface ${connectionStatus !== 'connected' ? 'disconnected' : ''}`}>
-						<div className="interface-container">
-							<div className="interface-header">
-								<h3>{t('interface.title')}</h3>
+					{/* Control Panel */}
+					<div className={`control-panel ${connectionStatus !== 'connected' ? 'disconnected' : ''}`}>
+						<div className="control-panel-container">
+							<div className="control-panel-header">
+								<h3>{t('controlPanel.title', 'Control Panel')}</h3>
 								{connectionStatus !== 'connected' && (
-									<span className="interface-connection-warning">({t('connection.disconnected')})</span>
+									<span className="control-panel-connection-warning">({t('connection.disconnected')})</span>
 								)}
 							</div>
 							
-							<div className="interface-controls">
-
-
-								
-								<div className="interface-control-group">
-									<label htmlFor="text-input" className="interface-label">{t('interface.textInput')}</label>
-									<input 
-										id="text-input"
-										type="text" 
-										className="interface-input" 
-										placeholder={t('interface.enterText')}
-										disabled={connectionStatus !== 'connected'}
-									/>
-								</div>
-								
-								
-
-								<div className="interface-control-group">
-									<label htmlFor="select-input" className="interface-label">{t('interface.dropdown')}</label>
-									<select 
-										id="select-input"
-										className="interface-select"
-										disabled={connectionStatus !== 'connected'}
-									>
-										<option value="option1">{t('interface.option')} 1</option>
-										<option value="option2">{t('interface.option')} 2</option>
-										<option value="option3">{t('interface.option')} 3</option>
-									</select>
-								</div>
-								
-								
-
-								<div className="interface-control-group">
-									<label htmlFor="range-input" className="interface-label">
-										{t('interface.slider')}: <span className="slider-value">50</span>
-									</label>
-									<input 
-										id="range-input"
-										type="range" 
-										min="0" 
-										max="100" 
-										defaultValue="50" 
-										className="interface-slider"
-										disabled={connectionStatus !== 'connected'}
-										onChange={(e) => {
-											// Update the displayed value
-											const sliderValueEl = document.querySelector('.slider-value');
-											if (sliderValueEl) sliderValueEl.textContent = e.target.value;
-										}}
-									/>
-								</div>
-								
-								
-								<div className="interface-control-group checkbox-group">
-									<input 
-										id="checkbox-input"
-										type="checkbox" 
-										className="interface-checkbox" 
-										disabled={connectionStatus !== 'connected'}
-									/>
-									<label htmlFor="checkbox-input" className="interface-label checkbox-label">{t('interface.checkbox')}</label>
-								</div>
-								
-								
-								<div className="interface-control-group radio-group">
-									<div className="interface-label">{t('interface.radioGroup')}</div>
-									<div className="radio-options">
-										<div className="radio-option">
+							<div className="control-panel-grid">
+								{/* Session Time Control */}
+								<div className="control-panel-section">
+									<h4>{t('controlPanel.sessionSettings', 'Session Settings')}</h4>
+									<div className="control-group">
+										<label htmlFor="max-session-time">{t('controlPanel.maxSessionTime', 'Maximum Session Time')}</label>
+										<div className="input-with-unit">
 											<input 
-												id="radio-1" 
-												type="radio" 
-												name="radio-group" 
-												value="option1" 
-												className="interface-radio"
-												defaultChecked
+												id="max-session-time" 
+												type="number" 
+												className="control-input" 
+												min="5" 
+												max="240" 
+												defaultValue="30" 
 												disabled={connectionStatus !== 'connected'}
 											/>
-											<label htmlFor="radio-1" className="radio-label">{t('interface.option')} 1</label>
+											<span className="input-unit">{t('controlPanel.minutes', 'minutes')}</span>
 										</div>
-										<div className="radio-option">
-											<input 
-												id="radio-2" 
-												type="radio" 
-												name="radio-group" 
-												value="option2" 
-												className="interface-radio"
-												disabled={connectionStatus !== 'connected'}
-											/>
-											<label htmlFor="radio-2" className="radio-label">{t('interface.option')} 2</label>
-										</div>
+										<button 
+											className="control-button primary"
+											disabled={connectionStatus !== 'connected'}
+										>
+											{t('controlPanel.apply', 'Apply')}
+										</button>
 									</div>
 								</div>
-							</div>
-							
-
-							<div className="interface-buttons">
-								<button 
-									className="interface-button"
-									onClick={() => {
-										console.log('Test button clicked');
-										if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-											webSocketClientRef.current.send({
-												type: "TEST_ACTION",
-												content: {
-													message: "Test button was clicked"
-												}
-											});
-											
-											setSocketMessages(prev => [...prev, {
-												type: 'CLIENT_ACTION',
-												content: {
-													action: 'testButton',
-													message: 'Test button was clicked'
-												},
-												timestamp: new Date().toISOString()
-											}]);
-										}
-									}}
-									disabled={connectionStatus !== 'connected'}
-								>
-									{t('buttons.test')}
-								</button>
-								<button 
-									className="interface-button secondary"
-									onClick={() => console.log('Reset clicked')}
-									disabled={connectionStatus !== 'connected'}
-								>
-									{t('buttons.reset')}
-								</button>
-								<button 
-									className="interface-button accent"
-									onClick={() => console.log('Submit clicked')}
-									disabled={connectionStatus !== 'connected'}
-								>
-									{t('buttons.submit')}
-								</button>
-							</div>
-						</div>
-					</div> */}
-
-
-
-
-
-
-
-
-
-
-
-					<div className={`flexible-interface ${connectionStatus !== 'connected' ? 'disconnected' : ''}`}>
-						<div className="interface-container">
-							<div className="interface-header">
-								<h3>{t('interface.title')}</h3>
-								{connectionStatus !== 'connected' && (
-									<span className="interface-connection-warning">({t('connection.disconnected')})</span>
-								)}
-							</div>
-							
-							<div className="interface-controls">
-								{/* Buttons-only section example */}
-								<div className="interface-buttons-row">
-									<button 
-										className="interface-button"
-										onClick={() => {
-											console.log('Action 1 clicked');
-											if (webSocketClientRef.current?.getConnectionStatus()) {
-												webSocketClientRef.current.send({
-													type: "test"
-												});
-											}
-										}}
-										disabled={connectionStatus !== 'connected'}
-									>
-										{t('interface.action1')}
-									</button>
-									{/* <button 
-										className="interface-button secondary"
-										onClick={() => console.log('Action 2 clicked')}
-										disabled={connectionStatus !== 'connected'}
-									>
-										{t('interface.action2')}
-									</button> */}
-									{/* <button 
-										className="interface-button accent"
-										onClick={() => console.log('Action 3 clicked')}
-										disabled={connectionStatus !== 'connected'}
-									>
-										{t('interface.action3')}
-									</button> */}
-								</div>
-
-								{/* Text input example */}
-								<div className="interface-control-group">
-									<label htmlFor="text-input" className="interface-label">{t('interface.textInput')}</label>
-									<input 
-										id="text-input"
-										type="text" 
-										className="interface-input" 
-										placeholder={t('interface.enterText')}
-										disabled={connectionStatus !== 'connected'}
-									/>
-								</div>
 								
-								{/* Dropdown example */}
-								<div className="interface-control-group">
-									<label htmlFor="select-input" className="interface-label">{t('interface.dropdown')}</label>
-									<select 
-										id="select-input"
-										className="interface-select"
-										disabled={connectionStatus !== 'connected'}
-									>
-										<option value="option1">{t('interface.option')} 1</option>
-										<option value="option2">{t('interface.option')} 2</option>
-										<option value="option3">{t('interface.option')} 3</option>
-									</select>
-								</div>
-								
-								{/* Range slider example */}
-								<div className="interface-control-group">
-									<label htmlFor="range-input" className="interface-label">
-										{t('interface.slider')}: <span className="slider-value">50</span>
-									</label>
-									<input 
-										id="range-input"
-										type="range" 
-										min="0" 
-										max="100" 
-										defaultValue="50" 
-										className="interface-slider"
-										disabled={connectionStatus !== 'connected'}
-										onChange={(e) => {
-											// Update the displayed value
-											const sliderValueEl = document.querySelector('.slider-value');
-											if (sliderValueEl) sliderValueEl.textContent = e.target.value;
-										}}
-									/>
-								</div>
-								
-								{/* Checkbox example */}
-								<div className="interface-control-group checkbox-group">
-									<input 
-										id="checkbox-input"
-										type="checkbox" 
-										className="interface-checkbox" 
-										disabled={connectionStatus !== 'connected'}
-									/>
-									<label htmlFor="checkbox-input" className="interface-label checkbox-label">{t('interface.checkbox')}</label>
-								</div>
-								
-								{/* Radio button group example */}
-								<div className="interface-control-group radio-group">
-									<div className="interface-label">{t('interface.radioGroup')}</div>
-									<div className="radio-options">
-										<div className="radio-option">
-											<input 
-												id="radio-1" 
-												type="radio" 
-												name="radio-group" 
-												value="option1" 
-												className="interface-radio"
-												defaultChecked
-												disabled={connectionStatus !== 'connected'}
-											/>
-											<label htmlFor="radio-1" className="radio-label">{t('interface.option')} 1</label>
-										</div>
-										<div className="radio-option">
-											<input 
-												id="radio-2" 
-												type="radio" 
-												name="radio-group" 
-												value="option2" 
-												className="interface-radio"
-												disabled={connectionStatus !== 'connected'}
-											/>
-											<label htmlFor="radio-2" className="radio-label">{t('interface.option')} 2</label>
-										</div>
+								{/* Dashboard Security */}
+								<div className="control-panel-section">
+									<h4>{t('controlPanel.security', 'Dashboard Security')}</h4>
+									<div className="control-group">
+										<label htmlFor="current-password">{t('controlPanel.currentPassword', 'Current Password')}</label>
+										<input 
+											id="current-password" 
+											type="password" 
+											className="control-input" 
+											placeholder="••••••••" 
+											disabled={connectionStatus !== 'connected'}
+										/>
+									</div>
+									<div className="control-group">
+										<label htmlFor="new-password">{t('controlPanel.newPassword', 'New Password')}</label>
+										<input 
+											id="new-password" 
+											type="password" 
+											className="control-input" 
+											placeholder="••••••••" 
+											disabled={connectionStatus !== 'connected'}
+										/>
+									</div>
+									<div className="control-group">
+										<label htmlFor="confirm-password">{t('controlPanel.confirmPassword', 'Confirm Password')}</label>
+										<input 
+											id="confirm-password" 
+											type="password" 
+											className="control-input" 
+											placeholder="••••••••" 
+											disabled={connectionStatus !== 'connected'}
+										/>
+										<button 
+											className="control-button primary"
+											disabled={connectionStatus !== 'connected'}
+										>
+											{t('controlPanel.changePassword', 'Change Password')}
+										</button>
 									</div>
 								</div>
-							</div>
-							
-
-							<div className="interface-buttons">
-								<button 
-									className="interface-button"
-									onClick={() => {
-										console.log('Test button clicked');
-										if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-											webSocketClientRef.current.send({
-												type: "TEST_ACTION",
-												content: {
-													message: "Test button was clicked"
-												}
-											});
-											
-											setSocketMessages(prev => [...prev, {
-												type: 'CLIENT_ACTION',
-												content: {
-													action: 'testButton',
-													message: 'Test button was clicked'
-												},
-												timestamp: new Date().toISOString()
-											}]);
-										}
-									}}
-									disabled={connectionStatus !== 'connected'}
-								>
-									{t('buttons.test')}
-								</button>
-								<button 
-									className="interface-button secondary"
-									onClick={() => console.log('Reset clicked')}
-									disabled={connectionStatus !== 'connected'}
-								>
-									{t('buttons.reset')}
-								</button>
-								<button 
-									className="interface-button accent"
-									onClick={() => console.log('Submit clicked')}
-									disabled={connectionStatus !== 'connected'}
-								>
-									{t('buttons.submit')}
-								</button>
+								
+								{/* Activity Monitor Settings */}
+								<div className="control-panel-section">
+									<h4>{t('controlPanel.activitySettings', 'Activity Settings')}</h4>
+									<div className="control-group">
+										<label>{t('controlPanel.monitorSettings', 'Activity Detection')}</label>
+										<div className="checkbox-group">
+											<div className="checkbox-item">
+												<input 
+													id="keyboard-monitor" 
+													type="checkbox" 
+													defaultChecked 
+													disabled={connectionStatus !== 'connected'}
+												/>
+												<label htmlFor="keyboard-monitor">{t('activity.keyboard')}</label>
+											</div>
+											<div className="checkbox-item">
+												<input 
+													id="mouse-movement-monitor" 
+													type="checkbox" 
+													defaultChecked 
+													disabled={connectionStatus !== 'connected'}
+												/>
+												<label htmlFor="mouse-movement-monitor">{t('activity.mouseMovement')}</label>
+											</div>
+											<div className="checkbox-item">
+												<input 
+													id="mouse-click-monitor" 
+													type="checkbox" 
+													defaultChecked 
+													disabled={connectionStatus !== 'connected'}
+												/>
+												<label htmlFor="mouse-click-monitor">{t('activity.mouseClick')}</label>
+											</div>
+											<div className="checkbox-item">
+												<input 
+													id="screen-monitor" 
+													type="checkbox" 
+													defaultChecked 
+													disabled={connectionStatus !== 'connected'}
+												/>
+												<label htmlFor="screen-monitor">{t('activity.screenChange')}</label>
+											</div>
+											<div className="checkbox-item">
+												<input 
+													id="audio-monitor" 
+													type="checkbox" 
+													defaultChecked 
+													disabled={connectionStatus !== 'connected'}
+												/>
+												<label htmlFor="audio-monitor">{t('activity.audio')}</label>
+											</div>
+										</div>
+										<button 
+											className="control-button primary"
+											disabled={connectionStatus !== 'connected'}
+										>
+											{t('controlPanel.saveSettings', 'Save Settings')}
+										</button>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 					<div className="aws-services">
