@@ -30,7 +30,7 @@ const LicenseModal: React.FC<LicenseModalProps> = ({ isOpen, onClose }) => {
           <h4>{t('license.frontendTitle', 'Frontend Project')}</h4>
           <p>{t('license.noLicense', 'No License')}</p>
           
-          <p>Copyright &copy; {new Date().getFullYear()} Studente AWS</p>
+          <p>Copyright &copy; {new Date().getFullYear()} <a href="mailto:rkdmf0000@gmail.com">rkdmf0000@gmail.com</a></p>
         </div>
         
         <h4>{t('license.libraries', 'Libraries Used')}</h4>
