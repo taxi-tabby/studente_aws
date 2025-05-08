@@ -70,12 +70,12 @@ def list_ec2_instances(region=None):
     
     # 모든 리전을 조회하는 경우
     regions_to_check = [region] if region else aws_regions
-    logger.info(f"EC2 인스턴스 조회 리전: {regions_to_check}")
+    logger.info(f"----------------------- EC2 인스턴스 조회 리전: {regions_to_check}")
     
     for current_region in regions_to_check:
         client = _get_ec2_client(current_region)
         if not client:
-            logger.error(f"AWS 인증 정보가 없습니다. 리전: {current_region}")
+            logger.error(f"--------------------- AWS 인증 정보가 없습니다. 리전: {current_region}")
             continue
         
         try:
@@ -102,6 +102,8 @@ def list_ec2_instances(region=None):
             
         except ClientError as e:
             logger.error(f"EC2 인스턴스 목록 조회 중 오류 발생 (리전: {current_region}): {e}")
+    
+    print("------------------------------------ EC2 인스턴스 목록:", instances)
     
     return instances
 

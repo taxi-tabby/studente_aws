@@ -320,35 +320,43 @@ async def handle_refresh(data: dict, client=None) -> dict:
         response = None
         
         if service == "ec2":
-            instances = aws_services.list_ec2_instances(region)
             response = {
-                "service": "ec2",
-                "instances": instances
+                "service": "aws",
+                "type": "REFRESH_EC2",
+                "content": {
+                    "type": "ec2",
+                    "instances": aws_services.list_ec2_instances(region),
+                    "region": region,
+                }
             }
         elif service == "ecs":
-            clusters = aws_services.list_ecs_clusters(region)
             response = {
-                "service": "ecs",
-                "clusters": clusters
+                "service": "aws",
+                "type": "REFRESH_ECS",
+                "content": {
+                    "activity": "REFRESH",
+                    "type": "ecs",
+                    "clusters": aws_services.list_ecs_clusters(region),
+                    "region": region,
+                }
             }
         elif service == "eks":
-            clusters = aws_services.list_eks_clusters(region)
             response = {
-                "service": "eks",
-                "clusters": clusters
-            }
-        elif service == "activity":
-            response = {
-                "service": "activity",
-                "status": "refresh",
-                "message": "활동 모니터링 데이터가 갱신되었습니다."
+                "service": "aws",
+                "type": "REFRESH_EKS",
+                "content": {
+                    "activity": "REFRESH",
+                    "type": "eks",
+                    "clusters": aws_services.list_eks_clusters(region),
+                    "region": region,
+                }
             }
         else:
             return {"status": "error", "message": f"알 수 없는 서비스: {service}"}
         
         if response:
             await broadcast_to_clients(response, exclude_client=client)
-            return {"status": "success", "message": f"{service.upper()} 데이터가 갱신되었습니다.", "share": True}
+            return response
         
     except Exception as e:
         logger.error(f"{service.upper()} 데이터 조회 중 오류: {e}", exc_info=True)
