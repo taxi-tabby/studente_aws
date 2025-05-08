@@ -9,32 +9,6 @@ interface WebSocketConsoleProps {
   onClearMessages?: () => void; // 상위 컴포넌트의 메시지 클리어 함수
 }
 
-// 메시지 요약 함수: 타입과 주요 내용을 기반으로 요약된 문자열 생성
-const summarizeMessage = (message: WebSocketMessage): string => {
-  let summary = message.type || 'Unknown';
-  
-  // 메시지 유형별 요약
-  if (message.content) {
-    if (message.type === 'USER_ACTIVITY') {
-      summary += `: ${message.content.activity || '활동'}`;
-      if (message.content.activity === 'TIMER_TICK') {
-        summary += ` (${Math.floor((message.content.nowtime || 0) / 1000)}초)`;
-      }
-    } else if (message.content.instanceId) {
-      summary += `: ${message.content.instanceId}`;
-    } else if (message.content.region) {
-      summary += `: ${message.content.region}`;
-    } else if (message.type?.includes('AWS')) {
-      summary += `: ${Object.keys(message.content).join(', ')}`;
-    }
-  } else if (message.service) {
-    summary += `: ${message.service}`;
-    if (message.status) summary += ` (${message.status})`;
-  }
-  
-  return summary;
-};
-
 // 메시지 필터 옵션 타입 정의
 type FilterOption = 'all' | 'test' | 'aws' | 'activity' | 'error';
 
@@ -59,6 +33,32 @@ const WebSocketConsole: React.FC<WebSocketConsoleProps> = ({
   // 메시지 인덱스 맵을 유지하기 위한 ref
   const messageIndexMapRef = useRef<Map<WebSocketMessage, number>>(new Map());
   const nextIndexRef = useRef<number>(0);
+  
+  // 메시지 요약 함수: 타입과 주요 내용을 기반으로 요약된 문자열 생성
+  const summarizeMessage = useCallback((message: WebSocketMessage): string => {
+    let summary = message.type || t('console.unknownType', 'Unknown');
+    
+    // 메시지 유형별 요약
+    if (message.content) {
+      if (message.type === 'USER_ACTIVITY') {
+        summary += `: ${message.content.activity || t('console.activity', 'activity')}`;
+        if (message.content.activity === 'TIMER_TICK') {
+          summary += ` (${Math.floor((message.content.nowtime || 0) / 1000)}s)`;
+        }
+      } else if (message.content.instanceId) {
+        summary += `: ${message.content.instanceId}`;
+      } else if (message.content.region) {
+        summary += `: ${message.content.region}`;
+      } else if (message.type?.includes('AWS')) {
+        summary += `: ${Object.keys(message.content).join(', ')}`;
+      }
+    } else if (message.service) {
+      summary += `: ${message.service}`;
+      if (message.status) summary += ` (${message.status})`;
+    }
+    
+    return summary;
+  }, [t]);
   
   // 메시지에 고유 인덱스를 할당
   const getMessageIndex = useCallback((message: WebSocketMessage): number => {
@@ -86,6 +86,7 @@ const WebSocketConsole: React.FC<WebSocketConsoleProps> = ({
             msg.type.toLowerCase().includes('ecs') ||
             msg.type.toLowerCase().includes('eks')
           )) ||
+          msg.service === 'aws' || 
           msg.service === 'ec2' || 
           msg.service === 'ecs' || 
           msg.service === 'eks'
@@ -150,7 +151,7 @@ const WebSocketConsole: React.FC<WebSocketConsoleProps> = ({
     );
   };
   
-  // JSON 객체를 정렬된 키로 문자열화하는 함수
+  // JSON 객체를 문자열화하는 함수 - 원본 구조 유지
   const formatJsonOutput = (obj: any): string => {
     // 빈 객체 혹은 undefined/null 객체 처리
     if (!obj || (typeof obj === 'object' && Object.keys(obj).length === 0)) {
@@ -158,7 +159,8 @@ const WebSocketConsole: React.FC<WebSocketConsoleProps> = ({
     }
     
     try {
-      return JSON.stringify(obj, Object.keys(obj).sort(), 2);
+      // 키 정렬 없이 원본 구조 그대로 들여쓰기만 적용하여 출력
+      return JSON.stringify(obj, null, 2);
     } catch (error) {
       // 직렬화할 수 없는 객체의 경우 기본 문자열로 변환
       return String(obj);
@@ -211,7 +213,7 @@ const WebSocketConsole: React.FC<WebSocketConsoleProps> = ({
                 <div 
                   key={`message-${message.__index}`}
                   className={`message-item ${expandedMessageIndex === message.__index ? 'selected' : ''} ${isError ? 'error-message' : ''}`}
-                  onClick={() => handleMessageClick(message.__index!)}
+                  onClick={() => message.__index !== undefined && handleMessageClick(message.__index)}
                 >
                   <div className="message-summary">
                     <div className="message-timestamp">

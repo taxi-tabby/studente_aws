@@ -6,7 +6,7 @@
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   background-color: #f6f8fa;
-  height: 300px;
+  height: 600px;
   display: flex;
   flex-direction: column;
   overflow: hidden; /* 내부 스크롤은 각 패널에서 처리 */
@@ -201,6 +201,7 @@
 /* 상세 패널 스타일링 */
 .message-details {
   padding: 15px;
+  padding-right:50px;
   overflow-y: auto;
   height: 100%;
   animation: fadeIn 0.3s ease;

@@ -6,7 +6,6 @@ import { WebSocketClient, ServiceType } from '../utils/WebSocketClient';
 
 interface EC2InstancesProps {
   instances: EC2Instance[];
-  onRefresh?: () => void;
   onStartInstance?: (instanceId: string) => void;
   onStopInstance?: (instanceId: string) => void;
   isConnected?: boolean; // 연결 상태 추가
@@ -15,7 +14,6 @@ interface EC2InstancesProps {
 
 const EC2Instances: React.FC<EC2InstancesProps> = ({ 
   instances, 
-  onRefresh, 
   onStartInstance, 
   onStopInstance,
   isConnected = true, // 기본값은 연결된 상태
@@ -56,12 +54,6 @@ const EC2Instances: React.FC<EC2InstancesProps> = ({
     if (webSocketClient && isConnected) {
       console.log('EC2 서비스 데이터 새로고침 요청');
       webSocketClient.refreshService(ServiceType.EC2);
-      return;
-    }
-    
-    // 기존 방식 유지 (하위 호환성)
-    if (onRefresh) {
-      onRefresh();
     }
   };
 

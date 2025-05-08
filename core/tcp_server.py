@@ -30,7 +30,6 @@ tcp_clients = []
 
 # AWS 리전 설정
 aws_regions = config.settings.get("aws", {}).get("regions", ["ap-northeast-2"])
-DEFAULT_REGION = aws_regions[0] if aws_regions else "ap-northeast-2"
 
 # 활동 모니터링 메시지 처리를 위한 글로벌 이벤트 루프
 event_loop = None
@@ -169,7 +168,7 @@ async def handle_websocket(websocket, path=None):
                             continue
                         
                         # 명령어 처리 시스템으로 메시지 전달
-                        response = await process_command(data, websocket, data.get("region", DEFAULT_REGION))
+                        response = await process_command(data, websocket, data.get("region"))
                         if response:
                             # share 플래그가 있으면 모든 클라이언트에게 브로드캐스트
                             if isinstance(response, dict) and response.get("share") is True:
@@ -312,7 +311,7 @@ def handle_tcp_client(client_socket, client_address):
                         if isinstance(message, dict):
                             # 명령어 처리 시스템으로 메시지 전달
                             loop = asyncio.new_event_loop()
-                            response = loop.run_until_complete(process_command(message, client_socket, message.get("region", DEFAULT_REGION)))
+                            response = loop.run_until_complete(process_command(message, client_socket, message.get("region")))
                             loop.close()
                             
                             # 응답이 있으면 클라이언트에게 전송
@@ -452,7 +451,6 @@ def run_server():
     )
     
     logger.info("========== 서버 시작 ==========")
-    logger.info(f"기본 AWS 리전: {DEFAULT_REGION}")
     
     # 명령어 핸들러 시스템에 브로드캐스트 함수 등록
     command_definitions.set_broadcast_functions(broadcast_to_ws_clients, send_to_tcp_clients)

@@ -5,6 +5,7 @@
 import logging
 import inspect
 import asyncio
+import time
 from typing import Dict, Callable, Any, Optional, Union, Awaitable
 
 # 로거 설정
@@ -108,6 +109,8 @@ async def process_command(message: dict, client=None, region: str = None, client
             # 응답에 self 플래그 추가 - 요청한 클라이언트에게 가는 응답은 항상 self: true
             if isinstance(response, dict):
                 response["self"] = True
+                
+                response["timestamp"] = int(time.time())
                 
                 # 공유 플래그가 있으면 브로드캐스트 실행
                 if "share" in response and response["share"] and _broadcast_func:

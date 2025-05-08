@@ -2,19 +2,28 @@ import React from 'react';
 import type { EKSCluster } from '../types/aws';
 import './AWSServices.css';
 import { useTranslation } from 'react-i18next';
+import { WebSocketClient, ServiceType } from '../utils/WebSocketClient';
 
 interface EKSClustersProps {
   clusters: EKSCluster[];
-  onRefresh?: () => void;
   isConnected?: boolean; // 연결 상태 추가
+  webSocketClient?: WebSocketClient; // WebSocketClient 인스턴스 추가
 }
 
 const EKSClusters: React.FC<EKSClustersProps> = ({ 
   clusters, 
-  onRefresh,
-  isConnected = true // 기본값은 연결된 상태
+  isConnected = true, // 기본값은 연결된 상태
+  webSocketClient // WebSocketClient 인스턴스
 }) => {
   const { t } = useTranslation();
+
+  const handleRefresh = () => {
+    // 웹소켓 클라이언트가 제공된 경우 직접 명령 체계 활용
+    if (webSocketClient && isConnected) {
+      console.log('EKS 서비스 데이터 새로고침 요청');
+      webSocketClient.refreshService(ServiceType.EKS);
+    }
+  };
 
   return (
     <div className={`dashboard-section ${!isConnected ? 'disconnected' : ''}`}>
@@ -25,7 +34,7 @@ const EKSClusters: React.FC<EKSClustersProps> = ({
         </h2>
         <button 
           className="refresh-button" 
-          onClick={onRefresh}
+          onClick={handleRefresh}
           disabled={!isConnected}
         >
           {t('buttons.refresh')}

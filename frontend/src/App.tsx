@@ -170,26 +170,26 @@ function App() {
 		}, 1000);
 
 		// 서버에 연결되면 실제 데이터 요청
-		const requestDataInterval = setInterval(() => {
-			// getConnectionStatus 메서드를 통해 연결 상태 확인
-			if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-				// 연결되었으면 실제 데이터 요청
-				webSocketClientRef.current.send({
-					type: "AWS_SERVICE_LIST_ALL",
-					content: {
-						region: "ap-northeast-2"
-					}
-				});
+		// const requestDataInterval = setInterval(() => {
+		// 	// getConnectionStatus 메서드를 통해 연결 상태 확인
+		// 	if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+		// 		// 연결되었으면 실제 데이터 요청
+		// 		webSocketClientRef.current.send({
+		// 			type: "AWS_SERVICE_LIST_ALL",
+		// 			content: {
+		// 				region: "ap-northeast-2"
+		// 			}
+		// 		});
 
-				clearInterval(requestDataInterval);
-			}
-		}, 2000);
+		// 		clearInterval(requestDataInterval);
+		// 	}
+		// }, 2000);
 
 		// Clean up the WebSocket connection on component unmount
 		return () => {
 			webSocketClient.disconnect();
 			clearInterval(connectionCheck);
-			clearInterval(requestDataInterval);
+			// clearInterval(requestDataInterval);
 		};
 	}, [i18n]);
 
@@ -362,77 +362,22 @@ function App() {
 			webSocketClientRef.current.connect();
 			
 			// 연결 후 데이터 요청
-			setTimeout(() => {
-				// getConnectionStatus 메서드를 통해 연결 상태 확인
-				if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-					// 표준 JSON 형식으로 메시지 전송
-					webSocketClientRef.current.send({
-						type: "AWS_SERVICE_LIST_ALL",
-						content: {
-							region: "ap-northeast-2"
-						}
-					});
-				}
-			}, 2000);
+			// setTimeout(() => {
+			// 	// getConnectionStatus 메서드를 통해 연결 상태 확인
+			// 	if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
+			// 		// 표준 JSON 형식으로 메시지 전송
+			// 		webSocketClientRef.current.send({
+			// 			type: "AWS_SERVICE_LIST_ALL",
+			// 			content: {
+			// 				region: "ap-northeast-2"
+			// 			}
+			// 		});
+			// 	}
+			// }, 2000);
 		}
 	};
 
-	// 데이터 새로고침
-	const handleRefreshData = () => {
-		// getConnectionStatus 메서드를 통해 연결 상태 확인
-		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-			// 표준 JSON 메시지 형식으로 요청
-			webSocketClientRef.current.send({
-				type: "AWS_SERVICE_LIST_ALL",
-				content: {
-					region: "ap-northeast-2"
-				}
-			});
-		} else {
-			// 연결이 안되어 있으면 샘플 데이터 새로고침
-			loadMockData();
-		}
-	};
 
-	// 서비스별 개별 데이터 새로고침
-	const handleRefreshEC2 = () => {
-		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-			// EC2 인스턴스 목록 요청 (표준 JSON 형식)
-			webSocketClientRef.current.send({
-				action: "refresh_service",
-				service: "ec2",
-			});
-		} else {
-			// Mock data - empty for now
-			setEC2Instances([]);
-		}
-	};
-
-	const handleRefreshECS = () => {
-		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-			// ECS 클러스터 목록 요청 (표준 JSON 형식)
-			webSocketClientRef.current.send({
-				action: "refresh_service",
-				service: "ec2",
-			});
-		} else {
-			// Mock data - empty for now
-			setECSClusters([]);
-		}
-	};
-
-	const handleRefreshEKS = () => {
-		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
-			// EKS 클러스터 목록 요청 (표준 JSON 형식)
-			webSocketClientRef.current.send({
-				action: "refresh_service",
-				service: "ec2",
-			});
-		} else {
-			// Mock data - empty for now
-			setEKSClusters([]);
-		}
-	};
 
 	// EC2 인스턴스 시작 처리
 	const handleStartEC2Instance = (instanceId: string) => {
@@ -528,40 +473,7 @@ function App() {
 		}
 	};
 
-	// Simulate activity for testing purposes
-	const simulateActivity = () => {
-		const randomKeyboard = Math.random() > 0.5;
-		const randomMouseMovement = Math.random() > 0.5;
-		const randomMouseClick = Math.random() > 0.5;
-		
-		setActivityStatus(prev => ({
-			...prev,
-			keyboard: randomKeyboard,
-			mouseMovement: randomMouseMovement,
-			mouseClick: randomMouseClick
-		}));
-		
-		// Reset after a short delay to simulate the blinking effect
-		setTimeout(() => {
-			setActivityStatus(prev => ({
-				...prev,
-				keyboard: false,
-				mouseMovement: false,
-				mouseClick: false
-			}));
-		}, 1000);
-	};
 
-	// Simulate activity periodically for demonstration
-	useEffect(() => {
-		const activityInterval = setInterval(() => {
-			if (!webSocketClientRef.current?.getConnectionStatus()) {
-				simulateActivity();
-			}
-		}, 3000);
-		
-		return () => clearInterval(activityInterval);
-	}, []);
 
 	// Mobile menu toggle function
 	const toggleMobileMenu = () => {
@@ -585,9 +497,6 @@ function App() {
 					
 					<div className={`header-controls ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
 						<div className="header-actions">
-							<button className="refresh-button" onClick={handleRefreshData}>
-								{t('buttons.refresh')}
-							</button>
 							
 							<div className={`connection-status ${connectionStatus}`}>
 								{t(`connection.${connectionStatus}`)}
@@ -808,20 +717,20 @@ function App() {
 					<div className="aws-services">
 						<EC2Instances 
 							instances={ec2Instances} 
-							onRefresh={handleRefreshEC2} 
 							onStartInstance={handleStartEC2Instance}
 							onStopInstance={handleStopEC2Instance}
 							isConnected={connectionStatus === 'connected'}
+							webSocketClient={webSocketClientRef.current || undefined}
 						/>
 						<ECSClusters 
 							clusters={ecsClusters} 
-							onRefresh={handleRefreshECS}
 							isConnected={connectionStatus === 'connected'} 
+							webSocketClient={webSocketClientRef.current || undefined}
 						/>
 						<EKSClusters 
 							clusters={eksClusters} 
-							onRefresh={handleRefreshEKS}
 							isConnected={connectionStatus === 'connected'} 
+							webSocketClient={webSocketClientRef.current || undefined}
 						/>
 					</div>
 					

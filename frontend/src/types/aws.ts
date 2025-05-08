@@ -1,3 +1,5 @@
+
+// [{'id': 'i-0e493abf123ebf7c7', 'type': 't2.nano', 'state': 'stopped', 'name': '', 'public_ip': None, 'private_ip': '172.31.3.229', 'region': 'ap-northeast-2'}]
 export interface EC2Instance {
   id: string;
   name: string;
@@ -8,6 +10,7 @@ export interface EC2Instance {
   public_ip?: string;
   private_ip?: string;
 }
+
 
 export interface ECSCluster {
   name: string;
