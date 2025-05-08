@@ -200,25 +200,21 @@ function App() {
 						}
 					});
 				}
-				
-				// 10초 동안 응답이 없으면 임시로 초기 설정 모드 활성화
-				// 실제 서버 구현 시에는 제거해야 함
+						// 서버에서 PASSWORD_STATUS 응답이 올 때까지 대기
+				// 실제 서버에서는 응답이 올 것이므로 여기서는 임시 설정을 하지 않음
 				const responseTimeout = setTimeout(() => {
-					if (!isAuthenticated && !isInitialSetup) {
-						console.log("서버에서 응답이 없어 임시로 초기 설정 화면 표시");
-						setIsInitialSetup(true);
+					if (!isAuthenticated) {
+						console.log("서버에서 응답 대기 중");
+						// 임시 초기 설정 모드 활성화는 제거
 					}
 					clearTimeout(responseTimeout);
 				}, 10000);
 						clearInterval(connectionCheck);
-			} else {
-				// 10초 이상 연결되지 않으면 임시로 초기 설정 모드 활성화 (개발 목적)
-				// connectionCheck는 setInterval의 ID 값으로 timeout 속성이 없음
-				// 연결 시도 횟수를 별도 변수로 추적하도록 수정
+			} else {				// 연결 시도 횟수를 추적
 				connectionAttempts++;
 				if (connectionAttempts > 10) {
-					console.log("서버 연결 실패, 임시 초기 설정 화면 표시");
-					setIsInitialSetup(true);
+					console.log("서버 연결 실패, 계속 연결 시도 중");
+					// 연결이 안 된 상태에서는 초기 설정 모드 활성화하지 않음
 					clearInterval(connectionCheck);
 				}
 			}
@@ -740,11 +736,37 @@ function App() {
 			timestamp: new Date().toISOString()
 		}]);
 	};
+	
+	// 개발 환경에서 바로 대시보드로 이동 (테스트 목적) - 실제 서버 구현 시 제거 필요
+	const goToDashboardDirectly = () => {
+		// 임시 인증 키 생성 (실제 서버 구현에서는 서버에서 발급)
+		const tempAuthKey = 'dev-direct-auth-key-' + new Date().getTime();
+		
+		// 인증 상태 즉시 설정
+		setIsAuthenticated(true);
+		setAuthKey(tempAuthKey);
+		
+		// 세션 스토리지에 저장 (새로고침 시에도 유지)
+		sessionStorage.setItem('authKey', tempAuthKey);
+		
+		// 콘솔에 로그 기록
+		console.log('개발 환경: 대시보드 바로 이동');
+		
+		// 콘솔 메시지에도 기록
+		setSocketMessages(prev => [...prev, {
+			type: 'DEV_DIRECT_ACCESS',
+			content: {
+				action: 'direct_dashboard_access',
+				timestamp: new Date().toISOString(),
+				note: '개발 환경에서의 대시보드 직접 접근'
+			},
+			timestamp: new Date().toISOString()
+		}]);
+	};
 
 	return (
 		<>
-			<div className="dashboard-container">
-				<header className="dashboard-header">
+			<div className="dashboard-container">				<header className="dashboard-header">
 					<h1>Studente AWS</h1>
 					
 					{/* Mobile menu toggle button */}
@@ -894,7 +916,29 @@ function App() {
 										>
 											{t('password.submit', '확인')}
 										</button>
-									</div>									{passwordError && <p className="password-error">{passwordError}</p>}									{/* 서버 연결 상태 */}
+									</div>									{passwordError && <p className="password-error">{passwordError}</p>}
+									
+									{/* 개발용 대시보드 바로가기 버튼 - 서버 연결 상태에 따라 표시 */}
+
+									<button 
+										onClick={goToDashboardDirectly}
+										style={{
+											marginTop: '15px',
+											padding: '10px 16px',
+											backgroundColor: '#FF5722',
+											color: 'white',
+											border: 'none',
+											borderRadius: '4px',
+											cursor: 'pointer',
+											fontWeight: 'bold',
+											width: '100%'
+										}}
+									>
+										개발용 대시보드 바로가기 (비인증 상태에서)
+									</button>
+					
+									
+									{/* 서버 연결 상태 */}
 									<div className="connection-info">
 										<span>서버 상태: <strong className={connectionStatus}>{connectionStatus === 'connected' ? '연결됨' : connectionStatus === 'connecting' ? '연결 중...' : '연결 안됨'}</strong></span>
 										{connectionStatus !== 'connected' && (
