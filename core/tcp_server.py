@@ -36,8 +36,8 @@ DEFAULT_REGION = aws_regions[0] if aws_regions else "ap-northeast-2"
 event_loop = None
 
 # WebSocket 메시지 브로드캐스트
-async def broadcast_to_ws_clients(message):
-    """연결된 모든 WebSocket 클라이언트에게 메시지를 전송합니다."""
+async def broadcast_to_ws_clients(message, exclude_client=None):
+    """연결된 모든 WebSocket 클라이언트에게 메시지를 전송합니다. exclude_client 파라미터가 있으면 해당 클라이언트는 제외합니다."""
     if not ws_clients:
         logger.debug("연결된 WebSocket 클라이언트가 없습니다.")
         return
@@ -55,6 +55,10 @@ async def broadcast_to_ws_clients(message):
     disconnected_clients = set()
     success_count = 0
     for client in ws_clients:
+        # 제외할 클라이언트면 건너뜀
+        if exclude_client is not None and client == exclude_client:
+            continue
+            
         try:
             await client.send(message_str)
             success_count += 1
@@ -71,9 +75,9 @@ async def broadcast_to_ws_clients(message):
         logger.info(f"연결이 끊어진 WebSocket 클라이언트 제거: {client.remote_address if hasattr(client, 'remote_address') else 'Unknown'}")
     
     if isinstance(message, dict):
-        logger.info(f"WebSocket 브로드캐스트 완료: {success_count}/{len(ws_clients)} 클라이언트 성공")
+        logger.info(f"WebSocket 브로드캐스트 완료: {success_count}/{len(ws_clients) - (1 if exclude_client in ws_clients else 0)} 클라이언트 성공")
     else:
-        logger.info(f"WebSocket 문자열 메시지 브로드캐스트 완료: {success_count}/{len(ws_clients)} 클라이언트 성공")
+        logger.info(f"WebSocket 문자열 메시지 브로드캐스트 완료: {success_count}/{len(ws_clients) - (1 if exclude_client in ws_clients else 0)} 클라이언트 성공")
 
 # 활동 모니터링 메시지 전달 함수
 def forward_activity_message(message):
@@ -135,7 +139,8 @@ async def handle_websocket(websocket, path=None):
             welcome_message = {
                 "type": "connection",
                 "status": "connected",
-                "message": "WebSocket 서버에 연결되었습니다."
+                "message": "WebSocket 서버에 연결되었습니다.",
+                "self": True
             }
             await websocket.send(json.dumps(welcome_message, ensure_ascii=False))
             logger.debug("환영 메시지 전송됨")
@@ -157,7 +162,8 @@ async def handle_websocket(websocket, path=None):
                         if not isinstance(data, dict):
                             await websocket.send(json.dumps({
                                 "status": "error", 
-                                "message": "데이터가 올바른 JSON 객체 형식이 아닙니다."
+                                "message": "데이터가 올바른 JSON 객체 형식이 아닙니다.",
+                                "self": True
                             }, ensure_ascii=False))
                             logger.warning("잘못된 데이터 형식: dict가 아님")
                             continue
@@ -165,6 +171,20 @@ async def handle_websocket(websocket, path=None):
                         # 명령어 처리 시스템으로 메시지 전달
                         response = await process_command(data, websocket, data.get("region", DEFAULT_REGION))
                         if response:
+                            # share 플래그가 있으면 모든 클라이언트에게 브로드캐스트
+                            if isinstance(response, dict) and response.get("share") is True:
+                                logger.info("'share' 플래그가 있는 응답을 모든 클라이언트에게 브로드캐스트합니다.")
+                                # share 플래그 제거 후 브로드캐스트
+                                broadcast_response = {k: v for k, v in response.items() if k != "share"}
+                                # 다른 클라이언트에게는 self: False 설정
+                                broadcast_response["self"] = False
+                                await broadcast_to_ws_clients(broadcast_response, exclude_client=websocket)
+                                # TCP 클라이언트에게도 전송
+                                send_to_tcp_clients(broadcast_response, exclude_client=None)
+                            
+                            # 항상 요청한 클라이언트에게는 응답 전송 (self: True 확인)
+                            if isinstance(response, dict) and "self" not in response:
+                                response["self"] = True
                             await websocket.send(json.dumps(response, ensure_ascii=False))
                             logger.debug("WebSocket 응답 전송 완료")
                             
@@ -173,7 +193,8 @@ async def handle_websocket(websocket, path=None):
                         logger.warning(f"JSON 파싱 실패: {message[:50]}...")
                         await websocket.send(json.dumps({
                             "status": "error", 
-                            "message": "유효한 JSON 형식이 아닙니다."
+                            "message": "유효한 JSON 형식이 아닙니다.",
+                            "self": True
                         }, ensure_ascii=False))
                         
                     except Exception as e:
@@ -181,7 +202,8 @@ async def handle_websocket(websocket, path=None):
                         logger.debug(f"에러 상세 정보: {traceback.format_exc()}")
                         await websocket.send(json.dumps({
                             "status": "error",
-                            "message": f"메시지 처리 중 오류가 발생했습니다: {str(e)}"
+                            "message": f"메시지 처리 중 오류가 발생했습니다: {str(e)}",
+                            "self": True
                         }, ensure_ascii=False))
                         
                 except Exception as message_error:
@@ -209,8 +231,8 @@ async def handle_websocket(websocket, path=None):
         except Exception as e:
             logger.error(f"클라이언트 제거 중 오류: {e}")
 
-def send_to_tcp_clients(message):
-    """연결된 모든 TCP 클라이언트로 메시지를 전송합니다."""    
+def send_to_tcp_clients(message, exclude_client=None):
+    """연결된 모든 TCP 클라이언트로 메시지를 전송합니다. exclude_client 파라미터가 있으면 해당 클라이언트는 제외합니다."""    
     global tcp_clients
     
     if not tcp_clients:
@@ -233,6 +255,10 @@ def send_to_tcp_clients(message):
     disconnected_clients = []
     success_count = 0
     for client in tcp_clients:
+        # 제외할 클라이언트면 건너뜀
+        if exclude_client is not None and client == exclude_client:
+            continue
+            
         try:
             client.sendall(message_bytes)
             success_count += 1
@@ -249,7 +275,8 @@ def send_to_tcp_clients(message):
         except:
             logger.warning("TCP 클라이언트 제거 중 오류 발생")
     
-    logger.info(f"TCP 메시지 전송 완료: {success_count}/{len(tcp_clients)} 클라이언트 성공")
+    client_count = len(tcp_clients) - (1 if exclude_client in tcp_clients else 0)
+    logger.info(f"TCP 메시지 전송 완료: {success_count}/{client_count} 클라이언트 성공")
     return success_count > 0
 
 def handle_tcp_client(client_socket, client_address):
@@ -290,6 +317,35 @@ def handle_tcp_client(client_socket, client_address):
                             
                             # 응답이 있으면 클라이언트에게 전송
                             if response:
+                                # share 플래그가 있으면 모든 클라이언트에게 브로드캐스트
+                                if isinstance(response, dict) and response.get("share") is True:
+                                    logger.info("TCP: 'share' 플래그가 있는 응답을 모든 클라이언트에게 브로드캐스트합니다.")
+                                    # share 플래그 제거 후 브로드캐스트
+                                    broadcast_response = {k: v for k, v in response.items() if k != "share"}
+                                    
+                                    # WebSocket 클라이언트에게 브로드캐스트
+                                    if event_loop and event_loop.is_running():
+                                        future = asyncio.run_coroutine_threadsafe(broadcast_to_ws_clients(broadcast_response), event_loop)
+                                        try:
+                                            future.result(timeout=3.0)
+                                            logger.debug("공유 메시지가 WebSocket 클라이언트에게 전송됨")
+                                        except Exception as e:
+                                            logger.error(f"WebSocket 공유 메시지 전송 중 오류: {e}")
+                                    else:
+                                        # 임시 이벤트 루프 생성하여 메시지 전송
+                                        try:
+                                            new_loop = asyncio.new_event_loop()
+                                            asyncio.set_event_loop(new_loop)
+                                            new_loop.run_until_complete(broadcast_to_ws_clients(broadcast_response))
+                                            new_loop.close()
+                                            logger.debug("임시 이벤트 루프로 공유 메시지 전송됨")
+                                        except Exception as e:
+                                            logger.error(f"임시 이벤트 루프 생성 중 오류: {e}")
+                                    
+                                    # TCP 클라이언트에게도 전송
+                                    send_to_tcp_clients(broadcast_response, exclude_client=client_socket)
+                                
+                                # 요청한 클라이언트에게 항상 응답 전송
                                 client_socket.sendall(json.dumps(response, ensure_ascii=False).encode())
                             continue
                                 
@@ -400,6 +456,10 @@ def run_server():
     
     # 명령어 핸들러 시스템에 브로드캐스트 함수 등록
     command_definitions.set_broadcast_functions(broadcast_to_ws_clients, send_to_tcp_clients)
+    
+    # 새로운 중앙화된 브로드캐스트 기능 등록
+    from core.commands.command_registry import set_broadcast_function
+    set_broadcast_function(broadcast_to_ws_clients)
     logger.info("명령어 핸들러 시스템에 브로드캐스트 함수가 등록되었습니다.")
     
     # 활동 모니터링 시작

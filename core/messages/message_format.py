@@ -79,7 +79,8 @@ def create_message(message_type, content, source="activity_monitor"):
     """
     msg = {
         "id": str(uuid.uuid4()),
-        "type": message_type,
+        "type": message_type,  # 이전 버전과의 호환성 유지
+        "action": message_type,  # action 키 추가
         "timestamp": int(time.time()),
         "source": source,
         "content": content
