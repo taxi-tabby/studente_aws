@@ -22,7 +22,7 @@ const enTranslations = {
   },
   download: {
     title: 'Download Tracker Application (Currently unavailable: under development)',
-    description: 'To connect to AWS services, you need to install the Studente AWS Tracker application.',
+    description: 'Connect to AWS services, you need to install the Studente AWS Tracker application.',
     windows: 'Download for Windows'
   },
   header: {
