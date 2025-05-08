@@ -90,7 +90,7 @@ export class WebSocketMessageFormatter {
           service: data.service,
           content: {
             service: data.service,
-            region: data.region || WS_CONFIG.DEFAULT_REGION
+            region: data.region 
           }
         };
         break;
