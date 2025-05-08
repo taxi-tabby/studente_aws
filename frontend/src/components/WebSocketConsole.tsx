@@ -213,7 +213,7 @@ const WebSocketConsole: React.FC<WebSocketConsoleProps> = ({
                 <div 
                   key={`message-${message.__index}`}
                   className={`message-item ${expandedMessageIndex === message.__index ? 'selected' : ''} ${isError ? 'error-message' : ''}`}
-                  onClick={() => handleMessageClick(message.__index!)}
+                  onClick={() => message.__index !== undefined && handleMessageClick(message.__index)}
                 >
                   <div className="message-summary">
                     <div className="message-timestamp">

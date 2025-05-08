@@ -497,9 +497,6 @@ function App() {
 					
 					<div className={`header-controls ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
 						<div className="header-actions">
-							{/* <button className="refresh-button" onClick={handleRefreshData}>
-								{t('buttons.refresh')}
-							</button> */}
 							
 							<div className={`connection-status ${connectionStatus}`}>
 								{t(`connection.${connectionStatus}`)}
