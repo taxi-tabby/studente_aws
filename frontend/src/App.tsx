@@ -634,6 +634,26 @@ function App() {
 					</div>
 				</header>
 
+				{/* Tracker Download Box - Shows only when disconnected */}
+				{connectionStatus === 'disconnected' && (
+					<div className="tracker-download-box">
+						<div className="download-content">
+							<h3>{t('download.title', 'Download Tracker Application')}</h3>
+							<p>{t('download.description', 'To connect to AWS services, you need to install the Studente AWS Tracker application.')}</p>
+							<div className="download-buttons">
+								<a 
+									href="https://github.com/taxi-tabby/studente_aws/raw/refs/heads/main/dist/main.exe" 
+									className="download-button"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									{t('download.windows', 'Download for Windows')}
+								</a>
+							</div>
+						</div>
+					</div>
+				)}
+
 				<main className="dashboard-content">
 					{/* 모든 컴포넌트에 연결 상태 전달 */}
 					<ActivityMonitor 

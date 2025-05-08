@@ -1000,3 +1000,98 @@ body {
   50% { opacity: 0.5; }
   100% { opacity: 1; }
 }
+
+/* Tracker Download Box styling */
+.tracker-download-box {
+  margin: 25px auto 20px;
+  width: 100%;
+  max-width: 800px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.download-content {
+  background: linear-gradient(to bottom right, #1e293b, #0f172a);
+  border: 2px solid #4f46e5;
+  border-radius: 8px;
+  padding: 24px;
+  color: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: highlight 2s ease-in-out infinite alternate;
+}
+
+.download-content h3 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.download-content p {
+  margin-bottom: 20px;
+  line-height: 1.5;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.download-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.download-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background: linear-gradient(to bottom, #4f46e5, #4338ca);
+  color: white;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.download-button:hover {
+  background: linear-gradient(to bottom, #6366f1, #4f46e5);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5);
+}
+
+.download-button.secondary {
+  background: linear-gradient(to bottom, #64748b, #475569);
+  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.4);
+}
+
+.download-button.secondary:hover {
+  background: linear-gradient(to bottom, #94a3b8, #64748b);
+  box-shadow: 0 6px 16px rgba(71, 85, 105, 0.5);
+}
+
+@keyframes highlight {
+  0% { box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3); }
+  100% { box-shadow: 0 4px 30px rgba(79, 70, 229, 0.7); }
+}
+
+/* Media query for mobile devices */
+@media (max-width: 640px) {
+  .tracker-download-box {
+    padding: 0 16px;
+  }
+  
+  .download-content {
+    padding: 16px;
+  }
+  
+  .download-buttons {
+    flex-direction: column;
+  }
+  
+  .download-button {
+    width: 100%;
+  }
+}

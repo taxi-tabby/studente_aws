@@ -20,6 +20,11 @@ const enTranslations = {
     reset: 'Reset',
     submit: 'Submit'
   },
+  download: {
+    title: 'Download Tracker Application',
+    description: 'To connect to AWS services, you need to install the Studente AWS Tracker application.',
+    windows: 'Download for Windows'
+  },
   header: {
     language: 'Language',
     about: 'About',
@@ -101,6 +106,11 @@ const koTranslations = {
     test: '테스트',
     reset: '초기화',
     submit: '제출'
+  },
+  download: {
+    title: '트래커 애플리케이션 다운로드',
+    description: 'AWS 서비스에 연결하려면 Studente AWS 트래커 애플리케이션을 설치해야 합니다.',
+    windows: '윈도우용 다운로드'
   },
   header: {
     language: '언어',
@@ -184,6 +194,11 @@ const jaTranslations = {
     reset: 'リセット',
     submit: '送信'
   },
+  download: {
+    title: 'トラッカーアプリケーションのダウンロード',
+    description: 'AWSサービスに接続するには、Studente AWSトラッカーアプリケーションをインストールする必要があります。',
+    windows: 'Windows版をダウンロード'
+  },
   header: {
     language: '言語',
     about: '概要',
@@ -265,6 +280,11 @@ const zhTranslations = {
     test: '测试',
     reset: '重置',
     submit: '提交'
+  },
+  download: {
+    title: '下载跟踪器应用程序',
+    description: '要连接到 AWS 服务，您需要安装 Studente AWS 跟踪器应用程序。',
+    windows: '下载 Windows 版'
   },
   header: {
     language: '语言',
