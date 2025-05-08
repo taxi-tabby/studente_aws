@@ -21,7 +21,7 @@ const enTranslations = {
     submit: 'Submit'
   },
   download: {
-    title: 'Download Tracker Application',
+    title: 'Download Tracker Application (Currently unavailable: under development)',
     description: 'To connect to AWS services, you need to install the Studente AWS Tracker application.',
     windows: 'Download for Windows'
   },
@@ -108,7 +108,7 @@ const koTranslations = {
     submit: '제출'
   },
   download: {
-    title: '트래커 애플리케이션 다운로드',
+    title: '트래커 애플리케이션 다운로드 (Currently unavailable: under development)',
     description: 'AWS 서비스에 연결하려면 Studente AWS 트래커 애플리케이션을 설치해야 합니다.',
     windows: '윈도우용 다운로드'
   },
@@ -195,7 +195,7 @@ const jaTranslations = {
     submit: '送信'
   },
   download: {
-    title: 'トラッカーアプリケーションのダウンロード',
+    title: 'トラッカーアプリケーションのダウンロード (Currently unavailable: under development)',
     description: 'AWSサービスに接続するには、Studente AWSトラッカーアプリケーションをインストールする必要があります。',
     windows: 'Windows版をダウンロード'
   },
@@ -282,7 +282,7 @@ const zhTranslations = {
     submit: '提交'
   },
   download: {
-    title: '下载跟踪器应用程序',
+    title: '下载跟踪器应用程序 (Currently unavailable: under development)',
     description: '要连接到 AWS 服务，您需要安装 Studente AWS 跟踪器应用程序。',
     windows: '下载 Windows 版'
   },
