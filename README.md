@@ -1,6 +1,6 @@
 ![AWS Monitoring](./readmeasset/banner1.jpg)
 
-*Read this in: [English](#studente-aws) | [한국어](#studente-aws-1) | [日本語](#studente-aws-2) | [中文](#studente-aws-3)*
+*Read this in: [English](#overview) | [한국어](#개요) | [日本語](#概要) | [中文](#概述)*
 
 ## Overview
 
@@ -30,6 +30,8 @@ Studente AWS is a comprehensive tool for real-time monitoring and management of 
 - Currently supports Windows operating systems only
 - Internet connection for accessing the dashboard
 
+> **Note:** Linux support is currently under development and not yet available. We are actively working on adding Linux compatibility in future releases.
+
 ### How to Use
 1. Run the application by double-clicking `dist/main.exe`
 2. Access the dashboard at [https://taxi-tabby.github.io/studente_aws/](https://taxi-tabby.github.io/studente_aws/)
@@ -40,45 +42,7 @@ Studente AWS is a comprehensive tool for real-time monitoring and management of 
 - A VS Code Extension is planned for future releases
 - The backend service must be running (main.exe) for the dashboard to display data
 
-## Getting Started
-
-### Prerequisites
-
-- Python 3.9+
-- Node.js 16+
-- AWS credentials configured
-
-### Installation
-
-1. Set up the backend:
-   ```bash
-   pip install -r requirements.txt
-   python setup.py install
-   ```
-
-2. Set up the frontend:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-3. Reset AWS credentials if needed:
-   ```bash
-   python reset_credentials.py
-   ```
-
-### Building Executable
-
-For Windows:
-```
-.\build_executable.ps1
-```
-
-For Linux/MacOS:
-```
-./build_executable.sh
-```
+For installation, development, and contribution guidelines, please refer to [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
@@ -112,6 +76,8 @@ Studente AWS는 예산이 제한된 개발자를 위한 AWS 리소스 요금 관
 - 현재 Windows 운영체제만 지원됨
 - 대시보드 접근을 위한 인터넷 연결 필요
 
+> **참고:** Linux 지원은 현재 개발 중이며 아직 사용할 수 없습니다. 향후 릴리스에서 Linux 호환성을 추가하기 위해 적극적으로 작업 중입니다.
+
 ### 사용 방법
 1. `dist/main.exe` 파일을 더블클릭하여 애플리케이션 실행
 2. [https://taxi-tabby.github.io/studente_aws/](https://taxi-tabby.github.io/studente_aws/) 에서 대시보드 접속
@@ -122,33 +88,7 @@ Studente AWS는 예산이 제한된 개발자를 위한 AWS 리소스 요금 관
 - VS Code 확장 프로그램은 향후 출시 예정
 - 대시보드에 데이터가 표시되려면 백엔드 서비스(main.exe)가 실행 중이어야 함
 
-## 시작하기
-
-### 필수 조건
-
-- Python 3.9 이상
-- Node.js 16 이상
-- AWS 자격 증명 구성
-
-### 설치
-
-1. 백엔드 설정:
-   ```bash
-   pip install -r requirements.txt
-   python setup.py install
-   ```
-
-2. 프론트엔드 설정:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-3. 필요한 경우 AWS 자격 증명 재설정:
-   ```bash
-   python reset_credentials.py
-   ```
+설치, 개발 및 기여 가이드라인은 [CONTRIBUTING.md](./CONTRIBUTING.md)를 참조하세요.
 
 ---
 
@@ -182,6 +122,8 @@ Studente AWSは、予算の限られた開発者のためのAWSリソース料�
 - 現在はWindowsオペレーティングシステムのみをサポート
 - ダッシュボードへのアクセスにはインターネット接続が必要
 
+> **注意:** Linuxサポートは現在開発中で、まだ利用できません。今後のリリースでLinux互換性を追加するために積極的に作業しています。
+
 ### 使用方法
 1. `dist/main.exe`をダブルクリックしてアプリケーションを実行
 2. [https://taxi-tabby.github.io/studente_aws/](https://taxi-tabby.github.io/studente_aws/)でダッシュボードにアクセス
@@ -192,33 +134,7 @@ Studente AWSは、予算の限られた開発者のためのAWSリソース料�
 - VS Code拡張機能は今後リリース予定
 - ダッシュボードにデータを表示するには、バックエンドサービス(main.exe)が実行されている必要があります
 
-## 始め方
-
-### 前提条件
-
-- Python 3.9以上
-- Node.js 16以上
-- AWS認証情報の設定
-
-### インストール
-
-1. バックエンドのセットアップ:
-   ```bash
-   pip install -r requirements.txt
-   python setup.py install
-   ```
-
-2. フロントエンドのセットアップ:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-3. 必要に応じてAWS認証情報のリセット:
-   ```bash
-   python reset_credentials.py
-   ```
+インストール、開発、貢献ガイドラインについては、[CONTRIBUTING.md](./CONTRIBUTING.md)を参照してください。
 
 ---
 
@@ -252,6 +168,8 @@ Studente AWS是为预算有限的开发人员设计的AWS资源费用管理解�
 - 目前仅支持Windows操作系统
 - 访问仪表板需要互联网连接
 
+> **注意:** Linux支持目前正在开发中，尚不可用。我们正在积极努力在未来版本中添加Linux兼容性。
+
 ### 使用方法
 1. 双击`dist/main.exe`运行应用程序
 2. 在[https://taxi-tabby.github.io/studente_aws/](https://taxi-tabby.github.io/studente_aws/)访问仪表板
@@ -262,31 +180,5 @@ Studente AWS是为预算有限的开发人员设计的AWS资源费用管理解�
 - 计划在未来版本中提供VS Code扩展
 - 仪表板显示数据需要后端服务(main.exe)正在运行
 
-## 开始使用
-
-### 先决条件
-
-- Python 3.9+
-- Node.js 16+
-- 已配置AWS凭证
-
-### 安装
-
-1. 设置后端:
-   ```bash
-   pip install -r requirements.txt
-   python setup.py install
-   ```
-
-2. 设置前端:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-3. 如需重置AWS凭证:
-   ```bash
-   python reset_credentials.py
-   ```
+安装、开发和贡献指南，请参阅[CONTRIBUTING.md](./CONTRIBUTING.md)。
 
