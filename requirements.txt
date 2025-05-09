@@ -9,3 +9,5 @@ pywin32>=305; platform_system == "Windows"
 PyYAML>=6.0
 websockets>=11.0.3
 psutil>=5.9.0
+bcrypt>=4.3.0
+cryptography>=44.0.3
