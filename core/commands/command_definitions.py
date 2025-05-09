@@ -4,11 +4,21 @@
 """
 import logging
 import asyncio
+import os
+import json
 from typing import Dict, Any, Optional, Callable, Awaitable
 from functools import wraps
 from core.commands.command_registry import register_action_handler, register_type_handler, register_handler
 from core.messages import message_format
 from core import aws_services
+import bcrypt
+import secrets
+import string
+import hashlib
+import hmac
+import base64
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import hashes, serialization
 
 # 로거 설정
 logger = logging.getLogger(__name__)
@@ -116,194 +126,146 @@ async def handle_test(data: dict, client=None) -> dict:
         "share": True  # 공유 플래그 추가
     }
 
-# ===== 활동 모니터링 명령어 핸들러 =====
-# @register_action_handler("startMonitoring")
-# @shared_response_handler
-# async def handle_start_monitoring(data: dict, client=None) -> dict:
-#     """활동 모니터링 시작 요청 처리"""
-#     logger.info("활동 모니터링 시작 요청 수신")
+@register_action_handler("password_create")
+@shared_response_handler
+async def handle_password_create(data: dict, client=None) -> dict:
+    """비밀번호 생성 요청 처리"""
+    logger.info("비밀번호 생성 요청 수신")
     
-#     try:
-#         # 활동 모니터링 모듈 로드
-#         from core import activity_monitor
+    try:
+        # 클라이언트로부터 받은 초기 비밀번호
+        client_password = data.get("password")
         
-#         # 활동 모니터링 시작
-#         if not hasattr(activity_monitor, 'is_monitoring_active') or not activity_monitor.is_monitoring_active():
-#             # 이미 실행 중인 프로세스가 있으면 강제 종료 후 시작
-#             if activity_monitor.is_already_running():
-#                 activity_monitor.find_and_kill_lock_process()
-#                 await asyncio.sleep(3)  # 완전히 종료될 시간 제공
+        if not client_password:
+            return {
+                "status": "error", 
+                "message": "비밀번호가 제공되지 않았습니다."
+            }
+            
+        # 1. 비밀번호 bcrypt 해싱
+        salt = bcrypt.gensalt()
+        hashed_password = bcrypt.hashpw(client_password.encode('utf-8'), salt).decode('utf-8')
+        
+        # 2. AWS 인증 정보 파일 경로
+        from core import aws_auth
+        credentials_file = aws_auth.aws_auth.credentials_file
+        
+        # 3. 기존 credentials 파일 로드 또는 새로 생성
+        credentials = {}
+        try:
+            if os.path.exists(credentials_file):
+                with open(credentials_file, "r", encoding="utf-8") as f:
+                    credentials = json.load(f)
+                logger.info("저장된 AWS 자격 증명을 로드했습니다.")
+        except Exception as e:
+            logger.warning(f"자격 증명 로드 중 오류 발생: {e}, 새 파일을 생성합니다.")
+        
+        # 4. 해시된 비밀번호를 credentials에 저장
+        credentials['password_hash'] = hashed_password
+        
+        # 5. 파일에 저장
+        try:
+            with open(credentials_file, "w", encoding="utf-8") as f:
+                json.dump(credentials, f)
+            logger.info("비밀번호가 AWS 자격 증명 파일에 안전하게 저장되었습니다.")
+        except Exception as e:
+            logger.error(f"비밀번호 저장 중 오류 발생: {e}")
+            return {
+                "status": "error", 
+                "message": f"비밀번호 저장 중 오류가 발생했습니다: {str(e)}"
+            }
+        
+        # 6. 인증 토큰 생성 (세션용)
+        auth_token = secrets.token_hex(32)
+        
+        # 7. 클라이언트에 성공 응답
+        return {
+            "status": "success",
+            "message": "비밀번호가 설정되었습니다.",
+            "content": {
+                "success": True,
+                "authKey": auth_token
+            },
+            "share": False  # 보안 정보이므로 공유하지 않음
+        }
+            
+    except Exception as e:
+        logger.error(f"비밀번호 생성 중 오류: {str(e)}", exc_info=True)
+        return {"status": "error", "message": f"비밀번호 생성 중 오류가 발생했습니다: {str(e)}"}
+
+@register_action_handler("verify_password")
+@shared_response_handler
+async def handle_verify_password(data: dict, client=None) -> dict:
+    """비밀번호 검증 요청 처리"""
+    logger.info("비밀번호 검증 요청 수신")
+    
+    try:
+        # 클라이언트로부터 받은 비밀번호
+        client_password = data.get("password")
+        
+        if not client_password:
+            return {
+                "status": "error", 
+                "message": "비밀번호가 제공되지 않았습니다."
+            }
+            
+        # AWS 인증 정보 파일 경로
+        from core import aws_auth
+        credentials_file = aws_auth.aws_auth.credentials_file
+        
+        # 저장된 비밀번호 해시 로드
+        if not os.path.exists(credentials_file):
+            return {
+                "status": "error",
+                "message": "자격 증명 파일을 찾을 수 없습니다. 비밀번호 설정이 필요합니다.",
+                "content": {"require_setup": True}
+            }
+            
+        try:
+            with open(credentials_file, "r", encoding="utf-8") as f:
+                credentials = json.load(f)
                 
-#             result = activity_monitor.start_monitoring()
-#             success = result
-#         else:
-#             logger.info("활동 모니터링이 이미 실행 중입니다.")
-#             success = True
-        
-#         # 결과 메시지 생성 및 전송
-#         activity_response = {
-#             "service": "activity",
-#             "status": "started" if success else "error",
-#             "message": "활동 모니터링이 시작되었습니다." if success else "활동 모니터링 시작에 실패했습니다."
-#         }
-        
-#         await broadcast_to_clients(activity_response, exclude_client=client)
-#         return {"status": "success", "message": "모니터링이 시작되었습니다.", "share": True} if success else {"status": "error", "message": "모니터링 시작에 실패했습니다."}
-        
-#     except Exception as e:
-#         logger.error(f"활동 모니터링 시작 중 오류: {e}", exc_info=True)
-#         return {"status": "error", "message": f"활동 모니터링 시작 중 오류가 발생했습니다: {str(e)}"}
-
-# ===== AWS EC2 명령어 핸들러 =====
-# @register_handler("startInstance", "action")
-# @register_handler("AWS_EC2_START_INSTANCE", "type")
-# @shared_response_handler
-# async def handle_start_instance(data: dict, client=None) -> dict:
-#     """EC2 인스턴스 시작 요청 처리"""
-#     # 메시지 형식에 따라 인스턴스 ID 추출
-#     if "instanceId" in data:
-#         instance_id = data.get("instanceId")
-#     elif "content" in data and "instanceId" in data["content"]:
-#         instance_id = data["content"]["instanceId"]
-#     else:
-#         return {"status": "error", "message": "인스턴스 ID가 필요합니다."}
-    
-#     region = data.get("region", None)
-#     logger.info(f"EC2 인스턴스 시작 요청: {instance_id}, 리전: {region}")
-    
-#     # EC2 인스턴스 시작
-#     success = aws_services.start_ec2_instance(instance_id, region)
-    
-#     if success:
-#         # 성공 시 최신 EC2 인스턴스 정보 조회
-#         instances = aws_services.list_ec2_instances(region)
-#         return {
-#             "service": "ec2",
-#             "instances": instances,
-#             "status": "updated",
-#             "message": f"인스턴스 {instance_id}가 시작되었습니다.",
-#             "share": True  # 공유 플래그 추가
-#         }
-#     else:
-#         return {"status": "error", "message": f"인스턴스 {instance_id} 시작 실패"}
-
-# @register_handler("stopInstance", "action")
-# @register_handler("AWS_EC2_STOP_INSTANCE", "type")
-# @shared_response_handler
-# async def handle_stop_instance(data: dict, client=None) -> dict:
-#     """EC2 인스턴스 중지 요청 처리"""
-#     # 메시지 형식에 따라 인스턴스 ID 추출
-#     if "instanceId" in data:
-#         instance_id = data.get("instanceId")
-#     elif "content" in data and "instanceId" in data["content"]:
-#         instance_id = data["content"]["instanceId"]
-#     else:
-#         return {"status": "error", "message": "인스턴스 ID가 필요합니다."}
-    
-#     region = data.get("region", None)
-#     logger.info(f"EC2 인스턴스 중지 요청: {instance_id}, 리전: {region}")
-    
-#     # EC2 인스턴스 중지
-#     success = aws_services.stop_ec2_instance(instance_id, region)
-    
-#     if success:
-#         # 성공 시 최신 EC2 인스턴스 정보 조회
-#         instances = aws_services.list_ec2_instances(region)
-#         return {
-#             "service": "ec2",
-#             "instances": instances,
-#             "status": "updated",
-#             "message": f"인스턴스 {instance_id}가 중지되었습니다.",
-#             "share": True  # 공유 플래그 추가
-#         }
-#     else:
-#         return {"status": "error", "message": f"인스턴스 {instance_id} 중지 실패"}
-
-# ===== 데이터 조회 명령어 핸들러 =====
-# @register_action_handler("getAll")
-# @shared_response_handler
-# async def handle_get_all(data: dict, client=None) -> dict:
-#     """모든 AWS 서비스 데이터 요청 처리"""
-#     region = None
-#     logger.info(f"모든 AWS 서비스 데이터 요청 - 리전: {region}")
-    
-#     try:
-#         # EC2 인스턴스 목록
-#         instances = aws_services.list_ec2_instances(region)
-#         ec2_response = {
-#             "service": "ec2",
-#             "instances": instances
-#         }
-#         await broadcast_to_clients(ec2_response, exclude_client=client)
-        
-#         # ECS 클러스터 목록
-#         clusters = aws_services.list_ecs_clusters(region)
-#         ecs_response = {
-#             "service": "ecs",
-#             "clusters": clusters
-#         }
-#         await broadcast_to_clients(ecs_response, exclude_client=client)
-        
-#         # EKS 클러스터 목록
-#         eks_clusters = aws_services.list_eks_clusters(region)
-#         eks_response = {
-#             "service": "eks",
-#             "clusters": eks_clusters
-#         }
-#         await broadcast_to_clients(eks_response, exclude_client=client)
-        
-#         # 활동 로그
-#         activity_response = {
-#             "service": "activity",
-#             "message": "모든 AWS 서비스 데이터가 로드되었습니다."
-#         }
-#         await broadcast_to_clients(activity_response, exclude_client=client)
-        
-#         return {"status": "success", "message": "모든 데이터를 요청했습니다.", "share": True}
-        
-#     except Exception as e:
-#         logger.error(f"AWS 데이터 조회 중 오류: {e}", exc_info=True)
-#         return {"status": "error", "message": f"AWS 데이터 조회 중 오류가 발생했습니다: {str(e)}"}
-
-
-
-# ===== 활동 모니터링 메시지 핸들러 =====
-# for activity_type in [
-#     message_format.MessageType.KEYBOARD_ACTIVITY,
-#     message_format.MessageType.MOUSE_MOVEMENT,
-#     message_format.MessageType.MOUSE_CLICK,
-#     message_format.MessageType.SCREEN_CHANGE,
-#     message_format.MessageType.ACTIVE_WINDOW,
-#     message_format.MessageType.AUDIO_PLAYBACK,
-#     message_format.MessageType.USER_ACTIVITY
-# ]:
-#     # 각 활동 유형에 대한 핸들러 등록 (action 기반으로 통합)
-#     @register_action_handler(activity_type)
-#     @shared_response_handler
-#     async def handle_activity_message(data: dict, client=None) -> dict:
-#         """활동 모니터링 관련 메시지 처리"""
-#         await broadcast_to_clients(data, exclude_client=client)
-#         return {"status": "success", "message": "활동 메시지가 전송되었습니다.", "share": True}
-
-# # AWS EC2 목록 요청 처리 (action 기반으로 통합)
-# @register_action_handler(message_format.MessageType.AWS_EC2_LIST)
-# @shared_response_handler
-# async def handle_aws_ec2_list(data: dict, client=None) -> dict:
-#     """EC2 인스턴스 목록 요청 처리"""
-#     region = None
-    
-#     instances = aws_services.list_ec2_instances(region)
-#     response = message_format.create_message(
-#         message_format.MessageType.AWS_EC2_LIST, 
-#         {"instances": instances}
-#     )
-#     # 응답에 action 키를 추가하여 일관성 유지
-#     if "type" in response and "action" not in response:
-#         response["action"] = response["type"]
-        
-#     await broadcast_to_clients(response, exclude_client=client)
-#     return {"status": "success", "share": True}
-
+            # 저장된 비밀번호 해시 가져오기
+            stored_hash = credentials.get('password_hash')
+            if not stored_hash:
+                return {
+                    "status": "error",
+                    "message": "저장된 비밀번호가 없습니다. 비밀번호 설정이 필요합니다.",
+                    "content": {"require_setup": True}
+                }
+                
+            # 비밀번호 검증
+            if bcrypt.checkpw(client_password.encode('utf-8'), stored_hash.encode('utf-8')):
+                # 인증 성공
+                auth_token = secrets.token_hex(32)
+                
+                return {
+                    "status": "success",
+                    "message": "비밀번호가 확인되었습니다.",
+                    "content": {
+                        "success": True,
+                        "authKey": auth_token
+                    },
+                    "share": False  # 보안 정보이므로 공유하지 않음
+                }
+            else:
+                # 인증 실패
+                return {
+                    "status": "error",
+                    "message": "잘못된 비밀번호입니다.",
+                    "content": {"success": False}
+                }
+                
+        except Exception as e:
+            logger.error(f"비밀번호 검증 중 파일 처리 오류: {e}", exc_info=True)
+            return {
+                "status": "error", 
+                "message": f"자격 증명 파일 처리 중 오류가 발생했습니다: {str(e)}"
+            }
+            
+    except Exception as e:
+        logger.error(f"비밀번호 검증 중 오류: {str(e)}", exc_info=True)
+        return {"status": "error", "message": f"비밀번호 검증 중 오류가 발생했습니다: {str(e)}"}
 
 @register_action_handler("refresh_service")
 @shared_response_handler
