@@ -7,6 +7,7 @@ export const CommandType = {
   // 기본 명령
   TEST: 'test',
   REFRESH_SERVICE: 'refresh_service',
+  PASSWORD_VERIFY: 'verify_password',
   
   // 활동 모니터링 명령 - command_definitions.py 참조
 } as const;

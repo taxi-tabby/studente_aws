@@ -484,12 +484,8 @@ function App() {
 		// 소켓을 통한 검증
 		if (webSocketClientRef.current && webSocketClientRef.current.getConnectionStatus()) {
 			// 소켓이 연결된 경우 서버로 검증 요청
-			webSocketClientRef.current.send({
-				type: "VERIFY_PASSWORD",
-				content: {
-					password: password
-				}
-			});
+			
+			webSocketClientRef.current.passwordVerify(password);
 			
 			// 요청을 보낸 후 로딩 상태 표시를 할 수 있음
 			setPasswordError(t('password.verifying', '비밀번호 확인 중...'));

@@ -126,7 +126,7 @@ async def handle_test(data: dict, client=None) -> dict:
         "share": True  # 공유 플래그 추가
     }
 
-@register_action_handler("password_create")
+@register_action_handler("create_password")
 @shared_response_handler
 async def handle_password_create(data: dict, client=None) -> dict:
     """비밀번호 생성 요청 처리"""
@@ -134,7 +134,8 @@ async def handle_password_create(data: dict, client=None) -> dict:
     
     try:
         # 클라이언트로부터 받은 초기 비밀번호
-        client_password = data.get("password")
+        content = data.get("content", {})
+        client_password = content.get("password")
         
         if not client_password:
             return {
@@ -142,23 +143,30 @@ async def handle_password_create(data: dict, client=None) -> dict:
                 "message": "비밀번호가 제공되지 않았습니다."
             }
             
-        # 1. 비밀번호 bcrypt 해싱
-        salt = bcrypt.gensalt()
-        hashed_password = bcrypt.hashpw(client_password.encode('utf-8'), salt).decode('utf-8')
         
-        # 2. AWS 인증 정보 파일 경로
+        # 1. AWS 인증 정보 파일 경로
         from core import aws_auth
         credentials_file = aws_auth.aws_auth.credentials_file
         
-        # 3. 기존 credentials 파일 로드 또는 새로 생성
+        # 2. 기존 credentials 파일 로드 또는 새로 생성
         credentials = {}
         try:
             if os.path.exists(credentials_file):
                 with open(credentials_file, "r", encoding="utf-8") as f:
                     credentials = json.load(f)
-                logger.info("저장된 AWS 자격 증명을 로드했습니다.")
+            # 이미 비밀번호가 설정되어 있는지 확인
+            if credentials.get('password_hash'):
+                return {
+                "status": "error", 
+                "message": "비밀번호가 이미 설정되어 있습니다. 재설정이 불가능합니다."
+                }
+            logger.info("저장된 AWS 자격 증명을 로드했습니다.")
         except Exception as e:
             logger.warning(f"자격 증명 로드 중 오류 발생: {e}, 새 파일을 생성합니다.")
+        
+        # 3. 비밀번호 bcrypt 해싱
+        salt = bcrypt.gensalt()
+        hashed_password = bcrypt.hashpw(client_password.encode('utf-8'), salt).decode('utf-8')
         
         # 4. 해시된 비밀번호를 credentials에 저장
         credentials['password_hash'] = hashed_password
@@ -167,12 +175,13 @@ async def handle_password_create(data: dict, client=None) -> dict:
         try:
             with open(credentials_file, "w", encoding="utf-8") as f:
                 json.dump(credentials, f)
+                
             logger.info("비밀번호가 AWS 자격 증명 파일에 안전하게 저장되었습니다.")
         except Exception as e:
             logger.error(f"비밀번호 저장 중 오류 발생: {e}")
             return {
-                "status": "error", 
-                "message": f"비밀번호 저장 중 오류가 발생했습니다: {str(e)}"
+            "status": "error", 
+            "message": f"비밀번호 저장 중 오류가 발생했습니다: {str(e)}"
             }
         
         # 6. 인증 토큰 생성 (세션용)
@@ -201,14 +210,19 @@ async def handle_verify_password(data: dict, client=None) -> dict:
     
     try:
         # 클라이언트로부터 받은 비밀번호
-        client_password = data.get("password")
+        content = data.get("content", {})
+        client_password = content.get("password")
         
+
         if not client_password:
             return {
                 "status": "error", 
                 "message": "비밀번호가 제공되지 않았습니다."
             }
             
+            
+
+        
         # AWS 인증 정보 파일 경로
         from core import aws_auth
         credentials_file = aws_auth.aws_auth.credentials_file
@@ -220,6 +234,7 @@ async def handle_verify_password(data: dict, client=None) -> dict:
                 "message": "자격 증명 파일을 찾을 수 없습니다. 비밀번호 설정이 필요합니다.",
                 "content": {"require_setup": True}
             }
+            
             
         try:
             with open(credentials_file, "r", encoding="utf-8") as f:
@@ -266,6 +281,10 @@ async def handle_verify_password(data: dict, client=None) -> dict:
     except Exception as e:
         logger.error(f"비밀번호 검증 중 오류: {str(e)}", exc_info=True)
         return {"status": "error", "message": f"비밀번호 검증 중 오류가 발생했습니다: {str(e)}"}
+    
+    
+    
+    
 
 @register_action_handler("refresh_service")
 @shared_response_handler

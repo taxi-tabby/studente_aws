@@ -50,18 +50,18 @@ def start_activity_monitoring_async():
 
 def t_start():
     """타이머 시작 시 호출되는 콜백 함수"""
-    logger.info("타이머가 시작되었습니다.")
+    # logger.info("타이머가 시작되었습니다.")
     message_format.send_timer_start()
 
 def t_tick():
     """타이머 틱 시 호출되는 콜백 함수"""
-    logger.info("타이머 틱 발생")
+    # logger.info("타이머 틱 발생")
     t = timer.ServiceTimer()
     message_format.send_timer_tick(nowtime=t.get_remaining_ms(), maxtime=t.get_duration())
 
 def t_end():
     """타이머 종료 시 호출되는 콜백 함수"""
-    logger.info("타이머가 종료되었습니다.")
+    # logger.info("타이머가 종료되었습니다.")
     message_format.send_timer_end()
 
 

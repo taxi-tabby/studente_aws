@@ -13,68 +13,75 @@ export { CommandType, ServiceType, MessageType };
 
 // WebSocket 클라이언트 클래스
 export class WebSocketClient implements IWebSocketClient {
-  public socket: WebSocket | null = null;
-  private webSocketService: WebSocketService;
-  private awsApi: AwsApi;
-  private activityApi: ActivityApi;
+	public socket: WebSocket | null = null;
+	private webSocketService: WebSocketService;
+	private awsApi: AwsApi;
+	private activityApi: ActivityApi;
 
-  constructor(port: number, messageHandler: (message: any) => void, hostname: string = 'localhost') {
-    // 기본 WebSocket 서비스 초기화
-    this.webSocketService = new WebSocketService(port, messageHandler, hostname);
-    
-    // 서비스 위임을 통한 socket 참조 연결
-    Object.defineProperty(this, 'socket', {
-      get: () => this.webSocketService.socket
-    });
-    
-    // API 객체 초기화
-    this.awsApi = new AwsApi(this.webSocketService);
-    this.activityApi = new ActivityApi(this.webSocketService);
-  }
+	constructor(port: number, messageHandler: (message: any) => void, hostname: string = 'localhost') {
+		// 기본 WebSocket 서비스 초기화
+		this.webSocketService = new WebSocketService(port, messageHandler, hostname);
 
-  // IWebSocketClient 인터페이스 구현 (WebSocketService에 위임)
-  
-  public setDisconnectCallback(callback: () => void): void {
-    this.webSocketService.setDisconnectCallback(callback);
-  }
+		// 서비스 위임을 통한 socket 참조 연결
+		Object.defineProperty(this, 'socket', {
+			get: () => this.webSocketService.socket
+		});
 
-  public connect(): void {
-    this.webSocketService.connect();
-  }
+		// API 객체 초기화
+		this.awsApi = new AwsApi(this.webSocketService);
+		this.activityApi = new ActivityApi(this.webSocketService);
+	}
 
-  public disconnect(): void {
-    this.webSocketService.disconnect();
-  }
+	// IWebSocketClient 인터페이스 구현 (WebSocketService에 위임)
 
-  public send(data: any): boolean {
-    return this.webSocketService.send(data);
-  }
+	public setDisconnectCallback(callback: () => void): void {
+		this.webSocketService.setDisconnectCallback(callback);
+	}
 
-  public getConnectionStatus(): boolean {
-    return this.webSocketService.getConnectionStatus();
-  }
-  
-  public setAutoReconnect(enable: boolean): void {
-    this.webSocketService.setAutoReconnect(enable);
-  }
+	public connect(): void {
+		this.webSocketService.connect();
+	}
 
-  // 서버에 구현된 API 메서드만 유지
-  
-  /**
-   * 테스트 명령 전송
-   * @returns {boolean} 전송 성공 여부
-   */
-  public sendTest(): boolean {
-    return this.activityApi.sendTest();
-  }
+	public disconnect(): void {
+		this.webSocketService.disconnect();
+	}
 
-  /**
-   * 특정 서비스 데이터 새로고침 요청
-   * @param {ServiceTypeValue} service - 서비스 타입
-   * @param {string} region - AWS 리전 (선택 사항)
-   * @returns {boolean} 전송 성공 여부
-   */
-  public refreshService(service: ServiceTypeValue, region?: string): boolean {
-    return this.awsApi.refreshService(service, { region });
-  }
+	public send(data: any): boolean {
+		return this.webSocketService.send(data);
+	}
+
+	public getConnectionStatus(): boolean {
+		return this.webSocketService.getConnectionStatus();
+	}
+
+	public setAutoReconnect(enable: boolean): void {
+		this.webSocketService.setAutoReconnect(enable);
+	}
+
+	// 서버에 구현된 API 메서드만 유지
+
+	/**
+	 * 테스트 명령 전송
+	 * @returns {boolean} 전송 성공 여부
+	 */
+	public sendTest(): boolean {
+		return this.activityApi.sendTest();
+	}
+
+	/**
+	 * 특정 서비스 데이터 새로고침 요청
+	 * @param {ServiceTypeValue} service - 서비스 타입
+	 * @param {string} region - AWS 리전 (선택 사항)
+	 * @returns {boolean} 전송 성공 여부
+	 */
+	public refreshService(service: ServiceTypeValue, region?: string): boolean {
+		return this.awsApi.refreshService(service, { region });
+	}
+
+
+	public passwordVerify(password: string): boolean {
+		return this.awsApi.passwordVerify(password);
+	}
+
+
 }

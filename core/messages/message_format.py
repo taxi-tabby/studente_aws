@@ -363,38 +363,38 @@ def send_activity_message(activity_type, details=None):
 
 def send_timer_start():
     """타이머 시작 메세지를 전송합니다다."""
-    logger.info("타이머 시작 메시지 큐에 추가")
+    # logger.info("타이머 시작 메시지 큐에 추가")
     return send_activity_message(MessageType.TIMER_START)
 
 def send_timer_tick(nowtime=None, maxtime=None):
     """타이머 진행마다 메세지를 전송합니다"""
-    logger.info("타이머 시작 메시지 큐에 추가")
+    # logger.info("타이머 시작 메시지 큐에 추가")
     return send_activity_message(MessageType.TIMER_TICK, {"nowtime": nowtime, "maxtime": maxtime})
 
 def send_timer_end():
     """타이머 종료 시 메세지를 전송합니다"""
-    logger.info("타이머 시작 메시지 큐에 추가")
+    # logger.info("타이머 시작 메시지 큐에 추가")
     return send_activity_message(MessageType.TIMER_END)
 
 
 def send_keyboard_activity():
     """키보드 활동 메시지를 전송합니다."""
-    logger.info("키보드 활동 메시지 큐에 추가")
+    # logger.info("키보드 활동 메시지 큐에 추가")
     return send_activity_message(MessageType.KEYBOARD_ACTIVITY)
 
 def send_mouse_movement():
     """마우스 이동 메시지를 전송합니다."""
-    logger.info("마우스 이동 메시지 큐에 추가")
+    # logger.info("마우스 이동 메시지 큐에 추가")
     return send_activity_message(MessageType.MOUSE_MOVEMENT)
 
 def send_mouse_click():
     """마우스 클릭 메시지를 전송합니다."""
-    logger.info("마우스 클릭 메시지 큐에 추가")
+    # logger.info("마우스 클릭 메시지 큐에 추가")
     return send_activity_message(MessageType.MOUSE_CLICK)
 
 def send_screen_change():
     """화면 변화 메시지를 전송합니다."""
-    logger.info("화면 변화 메시지 큐에 추가")
+    # logger.info("화면 변화 메시지 큐에 추가")
     return send_activity_message(MessageType.SCREEN_CHANGE)
 
 def send_active_window(window_name):

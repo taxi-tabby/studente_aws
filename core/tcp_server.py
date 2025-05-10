@@ -46,10 +46,10 @@ async def broadcast_to_ws_clients(message, exclude_client=None):
         message_str = json.dumps(message, ensure_ascii=False)
         message_type = message.get("type", "UNKNOWN")
         message_id = message.get("id", "")[:8] if "id" in message else "NO_ID"
-        logger.debug(f"WebSocket 브로드캐스트: 타입: {message_type}, ID: {message_id}")
+        # logger.debug(f"WebSocket 브로드캐스트: 타입: {message_type}, ID: {message_id}")
     else:
         message_str = str(message)
-        logger.debug(f"WebSocket 문자열 메시지 브로드캐스트: {message_str[:50]}...")
+        # logger.debug(f"WebSocket 문자열 메시지 브로드캐스트: {message_str[:50]}...")
         
     disconnected_clients = set()
     success_count = 0
@@ -73,10 +73,10 @@ async def broadcast_to_ws_clients(message, exclude_client=None):
         ws_clients.remove(client)
         logger.info(f"연결이 끊어진 WebSocket 클라이언트 제거: {client.remote_address if hasattr(client, 'remote_address') else 'Unknown'}")
     
-    if isinstance(message, dict):
-        logger.info(f"WebSocket 브로드캐스트 완료: {success_count}/{len(ws_clients) - (1 if exclude_client in ws_clients else 0)} 클라이언트 성공")
-    else:
-        logger.info(f"WebSocket 문자열 메시지 브로드캐스트 완료: {success_count}/{len(ws_clients) - (1 if exclude_client in ws_clients else 0)} 클라이언트 성공")
+    # if isinstance(message, dict):
+    #     logger.info(f"WebSocket 브로드캐스트 완료: {success_count}/{len(ws_clients) - (1 if exclude_client in ws_clients else 0)} 클라이언트 성공")
+    # else:
+    #     logger.info(f"WebSocket 문자열 메시지 브로드캐스트 완료: {success_count}/{len(ws_clients) - (1 if exclude_client in ws_clients else 0)} 클라이언트 성공")
 
 # 활동 모니터링 메시지 전달 함수
 def forward_activity_message(message):
@@ -89,7 +89,7 @@ def forward_activity_message(message):
             content_type = message.get("content", {}).get("activity", "UNKNOWN") if isinstance(message.get("content"), dict) else "UNKNOWN"
             message_id = message.get("id", "")[:8] if "id" in message else "NO_ID"
             
-            logger.info(f"활동 모니터링 메시지 전달 - 타입: {message_type}, 활동: {content_type}")
+            # logger.info(f"활동 모니터링 메시지 전달 - 타입: {message_type}, 활동: {content_type}")
             
             # TCP 클라이언트에게 메시지 전송
             tcp_success = send_to_tcp_clients(message)
@@ -101,7 +101,7 @@ def forward_activity_message(message):
                 try:
                     future.result(timeout=3.0)
                     ws_success = True
-                    logger.debug("활동 메시지 전송됨")
+                    # logger.debug("활동 메시지 전송됨")
                 except Exception as e:
                     logger.error(f"WebSocket 메시지 전송 중 오류: {e}")
             else:
@@ -235,7 +235,7 @@ def send_to_tcp_clients(message, exclude_client=None):
     global tcp_clients
     
     if not tcp_clients:
-        logger.debug("연결된 TCP 클라이언트가 없습니다.")
+        # logger.debug("연결된 TCP 클라이언트가 없습니다.")
         return False
     
     # 메시지가 문자열이 아닌 경우 JSON으로 변환
